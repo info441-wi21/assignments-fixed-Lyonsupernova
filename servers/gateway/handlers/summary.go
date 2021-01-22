@@ -48,8 +48,7 @@ func SummaryHandler(w http.ResponseWriter, r *http.Request) {
 	- Close the response HTML stream so that you don't leak resources.
 	- Finally, respond with a JSON-encoded version of the PageSummary
 	  struct. That way the client can easily parse the JSON back into
-	  an object. Remember to tell the client that the response content
-	  type is JSON.
+	  an object
 
 	Helpful Links:
 	https://golang.org/pkg/net/http/#Request.FormValue
