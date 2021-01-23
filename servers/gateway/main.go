@@ -1,5 +1,12 @@
 package main
 
+import (
+	"hello/handlers"
+	"log"
+	"net/http"
+	"os"
+)
+
 //main is the main entry point for the server
 func main() {
 	/* TODO: add code to do the following
@@ -14,4 +21,13 @@ func main() {
 	  that occur when trying to start the web server.
 	*/
 
+	addr := os.Getenv("ADDR")
+	if len(addr) == 0 {
+		addr = ":443"
+	}
+	TLSKEY := os.Getenv("TLSKEY")
+	TLSCERT := os.Getenv("TLSCERT")
+	mux := http.NewServeMux()
+	mux.HandleFunc("/v1/summary", handlers.SummaryHandler)
+	log.Fatal(http.ListenAndServeTLS(addr, TLSCERT, TLSKEY, mux))
 }
