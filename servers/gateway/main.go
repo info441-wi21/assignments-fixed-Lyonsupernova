@@ -1,7 +1,7 @@
 package main
 
 import (
-	"hello/handlers"
+	"assignments-Lyonsupernova/servers/gateway/handlers"
 	"log"
 	"net/http"
 	"os"
