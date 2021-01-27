@@ -10,7 +10,7 @@ submitbtn.addEventListener('click', (e) => {
     e.preventDefault();
     let websiteInput = $('websiteInput');
     let failed = false
-    fetch(`https://umbrellalance.me:443/v1/summary?url=${websiteInput.value}`).then(d => {
+    fetch(`https://lyonsupernova.me/v1/summary?url=${websiteInput.value}`).then(d => {
         if (d.status >= 400) {
             // console.log(d.text())
             failed = true;

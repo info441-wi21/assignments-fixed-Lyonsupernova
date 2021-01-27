@@ -1,8 +1,5 @@
-docker rmi -f lyons124/summary:latest
-docker pull lyons124/summary:latest
 docker rm -f 344summary
-
-
+docker pull lyons124/summary:latest
 
 
 docker run -d \
