@@ -110,7 +110,7 @@ func fetchHTML(pageURL string) (io.ReadCloser, error) {
 	if !strings.HasPrefix(pageURL, "https://") && !strings.HasPrefix(pageURL, "http://") {
 		pageURL = "https://" + pageURL
 	}
-
+	log.Printf("fetching URL %s", pageURL)
 	resp, err := http.Get(pageURL)
 	if err != nil {
 		log.Printf("Get error found")
