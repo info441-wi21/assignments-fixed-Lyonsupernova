@@ -1,8 +1,8 @@
 docker rm -f gateway
 docker pull lyons124/gateway:latest
 
-export TLSCERT=/etc/letsencrypt/live/lyonsupernova.me/fullchain.pem
-export TLSKEY=/etc/letsencrypt/live/lyonsupernova.me/privkey.pem
+export TLSCERT=/etc/letsencrypt/live/api.lyonsupernova.me/fullchain.pem
+export TLSKEY=/etc/letsencrypt/live/api.lyonsupernova.me/privkey.pem
 
 docker run -d \
 --name gateway \
