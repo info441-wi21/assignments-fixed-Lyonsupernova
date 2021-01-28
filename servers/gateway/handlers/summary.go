@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 
@@ -67,23 +66,28 @@ func SummaryHandler(w http.ResponseWriter, r *http.Request) {
 	https://golang.org/pkg/net/http/#Error
 	https://golang.org/pkg/encoding/json/#NewEncoder
 	*/
-	w.Header().Add(headerCORS, corsAnyOrigin)
-	r.ParseForm()
-	myURL := r.FormValue("url")
+	w.Header().Set(headerCORS, corsAnyOrigin)
+
+	myURL := r.URL.Query().Get("url")
 	if len(myURL) == 0 {
+		log.Printf("Bad request")
 		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
 	}
 	resp, err := fetchHTML(myURL)
-	if resp == nil {
+	if err != nil {
+		log.Printf("Error fetching URL")
 		log.Fatalf("Error fetching URL: %v\n", err)
 	}
 	p, err := extractSummary(myURL, resp)
-	defer resp.Close()
-	enc := json.NewEncoder(os.Stdout)
-	w.Header().Add("Content-Type", "application/json") // add json content type before encoding
-	if err := enc.Encode(p); err != nil {
-		log.Fatalf("error encoding struct into JSON: %v\n", err)
+	if err != nil {
+		http.Error(w, "Error extracting summary", http.StatusBadRequest)
+		return
 	}
+	defer resp.Close()
+
+	w.Header().Add("Content-Type", "application/json") // add json content type before encoding
+	json.NewEncoder(w).Encode(p)
 
 }
 
@@ -103,15 +107,24 @@ func fetchHTML(pageURL string) (io.ReadCloser, error) {
 	Helpful Links:
 	https://golang.org/pkg/net/http/#Get
 	*/
+	if !strings.HasPrefix(pageURL, "https://") && !strings.HasPrefix(pageURL, "http://") {
+		pageURL = "https://" + pageURL
+	}
 
-	resp, _ := http.Get(pageURL)
+	resp, err := http.Get(pageURL)
+	if err != nil {
+		log.Printf("Get error found")
+		return nil, errors.New("Get Error Found")
+	}
 	if resp.StatusCode >= 400 {
 		//log.Fatalf("response status code %d was >= 400\n", resp.StatusCode)  don't use fatalf() it will stop the program
+		log.Printf("response status code was >= 400")
 		return nil, errors.New("response status code was >= 400") // create a new error
 	}
 	ctype := resp.Header.Get("Content-type")
 	if !strings.HasPrefix(ctype, "text/html") {
 		//log.Fatalf("response content type was %s not text/html\n", ctype)
+		log.Printf("response content type was not html")
 		return nil, errors.New("response content type was not html")
 	}
 
@@ -165,6 +178,7 @@ func extractSummary(pageURL string, htmlStream io.ReadCloser) (*PageSummary, err
 			if err == io.EOF {
 				break
 			}
+			log.Printf("error tokenizing HTML")
 			log.Fatalf("error tokenizing HTML: %v", tokenizer.Err())
 		}
 		// if the token begins with <head> ... </head>
@@ -295,7 +309,7 @@ func parseURL(pageURL string, relativeURL string) string {
 // helper function to log the error
 func checkErr(err error) {
 	if err != nil {
+		log.Printf("error log")
 		log.Fatal(err)
 	}
 }
-

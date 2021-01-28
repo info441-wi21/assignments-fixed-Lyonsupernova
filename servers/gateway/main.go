@@ -1,7 +1,7 @@
 package main
 
 import (
-	"assignments-Lyonsupernova/servers/gateway/handlers"
+	"assignments-fixed-Lyonsupernova/servers/gateway/handlers"
 	"log"
 	"net/http"
 	"os"
@@ -28,6 +28,7 @@ func main() {
 	TLSKEY := os.Getenv("TLSKEY")
 	TLSCERT := os.Getenv("TLSCERT")
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v1/summary", handlers.SummaryHandler)
+	log.Printf("server is listening at %s...", addr)
+	mux.HandleFunc("/v1/summary/", handlers.SummaryHandler)
 	log.Fatal(http.ListenAndServeTLS(addr, TLSCERT, TLSKEY, mux))
 }
