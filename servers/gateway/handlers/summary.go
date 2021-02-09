@@ -77,7 +77,6 @@ func SummaryHandler(w http.ResponseWriter, r *http.Request) {
 	resp, err := fetchHTML(myURL)
 	if err != nil {
 		log.Printf("Error fetching URL")
-		log.Fatalf("Error fetching URL: %v\n", err)
 	}
 	p, err := extractSummary(myURL, resp)
 	if err != nil {
@@ -179,7 +178,6 @@ func extractSummary(pageURL string, htmlStream io.ReadCloser) (*PageSummary, err
 				break
 			}
 			log.Printf("error tokenizing HTML")
-			log.Fatalf("error tokenizing HTML: %v", tokenizer.Err())
 		}
 		// if the token begins with <head> ... </head>
 		if tokenType == html.StartTagToken || tokenType == html.EndTagToken || tokenType == html.SelfClosingTagToken {
@@ -310,6 +308,5 @@ func parseURL(pageURL string, relativeURL string) string {
 func checkErr(err error) {
 	if err != nil {
 		log.Printf("error log")
-		log.Fatal(err)
 	}
 }
