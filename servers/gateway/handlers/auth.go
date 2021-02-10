@@ -73,6 +73,8 @@ func (ch *ContextHandler) UsersHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
+	json, _ := json.Marshal(insertUsr)
+	w.Write([]byte(json))
 }
 
 // SpecificUserHandler authenticate the user and get the seesion state
@@ -119,6 +121,8 @@ func (ch *ContextHandler) SpecificUserHandler(w http.ResponseWriter, r *http.Req
 			http.Error(w, "Bad request", http.StatusBadRequest)
 			return
 		}
+		json, _ := json.Marshal(usr)
+		w.Write([]byte(json))
 	} else if r.Method == http.MethodPatch {
 		if base != "me" {
 			userID, err := strconv.ParseInt(base, 10, 64)
@@ -156,6 +160,8 @@ func (ch *ContextHandler) SpecificUserHandler(w http.ResponseWriter, r *http.Req
 			http.Error(w, "Bad request", http.StatusBadRequest)
 			return
 		}
+		json, _ := json.Marshal(newUsr)
+		w.Write([]byte(json))
 	} else {
 		http.Error(w, "Error request method", http.StatusMethodNotAllowed)
 	}
@@ -209,6 +215,8 @@ func (ch *ContextHandler) SessionsHandler(w http.ResponseWriter, r *http.Request
 			http.Error(w, "Bad request", http.StatusBadRequest)
 			return
 		}
+		json, _ := json.Marshal(user)
+		w.Write([]byte(json))
 	} else {
 		http.Error(w, "Error status method: only accept Post", http.StatusMethodNotAllowed)
 	}

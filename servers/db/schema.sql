@@ -7,3 +7,10 @@ create table if not exists Users (
     LastName varchar(128) not null,
     PhotoURL varchar(2083) not null
 );
+
+create table if not exsits LogInfo (
+    ID int not null auto_increment primary key,
+    LogTime DateTime not null,
+    IpAddress varchar(255) not null unique,
+    constraint fk_user_id foreign key (ID) references User(ID)
+);

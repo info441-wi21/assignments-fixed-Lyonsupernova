@@ -2,9 +2,14 @@ package main
 
 import (
 	"assignments-fixed-Lyonsupernova/servers/gateway/handlers"
+	"assignments-fixed-Lyonsupernova/servers/gateway/models/users"
+	"assignments-fixed-Lyonsupernova/servers/gateway/sessions"
 	"log"
 	"net/http"
 	"os"
+	"time"
+
+	"github.com/go-redis/redis"
 )
 
 //main is the main entry point for the server
@@ -26,10 +31,31 @@ func main() {
 	if len(addr) == 0 {
 		addr = ":443"
 	}
+	sessionID := os.Getenv("SESSIONKEY")
+	redisAddr := os.Getenv("REDISADDR")
+	DSN := os.Getenv("DSN")
+	redisDB := redis.NewClient(&redis.Options{
+		Addr: redisAddr,
+	})
+	sessionStore := sessions.NewRedisStore(redisDB, time.Hour)
+	userStore, err := users.NewMySQLStore(DSN)
+	if err != nil {
+		log.Printf("Unable to open database mysql")
+	}
+	contextHandler := &handlers.ContextHandler{
+		SessionID:    sessionID,
+		SessionStore: sessionStore,
+		UserStore:    userStore,
+	}
+
 	TLSKEY := os.Getenv("TLSKEY")
 	TLSCERT := os.Getenv("TLSCERT")
 	mux := http.NewServeMux()
 	log.Printf("server is listening at %s...", addr)
 	mux.HandleFunc("/v1/summary/", handlers.SummaryHandler)
+	mux.HandleFunc("/v1/users", contextHandler.UsersHandler)
+	mux.HandleFunc("/v1/users/", contextHandler.SpecificUserHandler)
+	mux.HandleFunc("/v1/sessions", contextHandler.SessionsHandler)
+	mux.HandleFunc("/v1/sessions/", contextHandler.SpecificSessionHandler)
 	log.Fatal(http.ListenAndServeTLS(addr, TLSCERT, TLSKEY, mux))
 }
