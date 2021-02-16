@@ -10,7 +10,7 @@ create table if not exists Users (
 
 create table if not exsits LogInfo (
     ID int not null auto_increment primary key,
+    UserID int not null,
     LogTime DateTime not null,
-    IpAddress varchar(255) not null unique,
-    constraint fk_user_id foreign key (ID) references User(ID)
+    IpAddress varchar(255) not null
 );

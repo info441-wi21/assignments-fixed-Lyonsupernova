@@ -210,6 +210,8 @@ func (ch *ContextHandler) SessionsHandler(w http.ResponseWriter, r *http.Request
 			clientIP = r.Header.Get("X-Forwarded-For")
 		}
 
+		err = ch.UserStore.LogSignIn(user, time.Now(), clientIP)
+
 		// writing response to the clients
 		w.Header().Set("Content-Type", "application/json")
 		// status code 201

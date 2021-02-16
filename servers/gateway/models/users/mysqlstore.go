@@ -2,6 +2,8 @@ package users
 
 import (
 	"database/sql"
+	"fmt"
+	"time"
 )
 
 // GetByType is an enumerate for GetBy* functions implemented
@@ -133,5 +135,15 @@ func (ms *MySQLStore) Delete(id int64) error {
 		return ErrUserNotFound
 	}
 
+	return nil
+}
+
+// LogSignIn logs sign-in attempts
+func (ms *MySQLStore) LogSignIn(user *User, dateTime time.Time, clientIP string) error {
+	insertQuery := "insert into LogInfo(UserID,LogTime,IpAddress) values(?,?,?)"
+	_, err := ms.Database.Exec(insertQuery, user.ID, dateTime, clientIP)
+	if err != nil {
+		return fmt.Errorf("error logging sign in: %v", err)
+	}
 	return nil
 }
