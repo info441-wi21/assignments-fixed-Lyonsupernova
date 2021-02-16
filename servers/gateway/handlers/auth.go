@@ -12,11 +12,6 @@ import (
 	"time"
 )
 
-//TODO: define HTTP handler functions as described in the
-//assignment description. Remember to use your handler context
-//struct as the receiver on these functions so that you have
-//access to things like the session store and user store.
-
 // UsersHandler handles the request
 func (ch *ContextHandler) UsersHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
@@ -25,7 +20,7 @@ func (ch *ContextHandler) UsersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	contentType := r.Header.Get("Content-Type")
 	if !strings.HasPrefix(contentType, "application/json") {
-		log.Printf("The request body must be in JSON")
+		log.Printf("The request body must be in JSON %s", contentType)
 		http.Error(w, "The request body must be in JSON", http.StatusUnsupportedMediaType)
 		return
 	}
@@ -47,6 +42,7 @@ func (ch *ContextHandler) UsersHandler(w http.ResponseWriter, r *http.Request) {
 	usr, err := newUsr.ToUser()
 	if err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
 	}
 	insertUsr, err := ch.UserStore.Insert(usr)
 	if err != nil {
@@ -56,15 +52,14 @@ func (ch *ContextHandler) UsersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// begin a session
-	sessionState := SessionState{BeginDate: time.Now(), User: insertUsr}
-	_, err = sessions.BeginSession(ch.SessionID, ch.SessionStore, sessionState, w)
+	_, err = sessions.BeginSession(ch.SessionID, ch.SessionStore, &SessionState{time.Now(), insertUsr}, w)
 	if err != nil {
 		log.Printf("Begin session error")
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
 	// writing response to the clients
-	w.Header().Add("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json")
 	// status code 201
 	w.WriteHeader(http.StatusCreated)
 
@@ -150,17 +145,22 @@ func (ch *ContextHandler) SpecificUserHandler(w http.ResponseWriter, r *http.Req
 			http.Error(w, "Bad request", http.StatusBadRequest)
 			return
 		}
-		ch.UserStore.Update(sessionState.User.ID, newUsr)
+		update_usr, err := ch.UserStore.Update(sessionState.User.ID, newUsr)
+		if err != nil {
+			log.Printf("updated failed")
+			http.Error(w, "updated error found", http.StatusBadRequest)
+			return
+		}
 		// writing response to the clients
 		w.Header().Set("Content-Type", "application/json")
 		// status code 200
 		w.WriteHeader(http.StatusOK)
-		if err := json.NewEncoder(w).Encode(newUsr); err != nil {
+		if err := json.NewEncoder(w).Encode(update_usr); err != nil {
 			log.Printf("User profile cannot be encoded in JSON format")
 			http.Error(w, "Bad request", http.StatusBadRequest)
 			return
 		}
-		json, _ := json.Marshal(newUsr)
+		json, _ := json.Marshal(update_usr)
 		w.Write([]byte(json))
 	} else {
 		http.Error(w, "Error request method", http.StatusMethodNotAllowed)
@@ -199,13 +199,17 @@ func (ch *ContextHandler) SessionsHandler(w http.ResponseWriter, r *http.Request
 		}
 
 		// begin a new sessison
-		sesssionState := SessionState{BeginDate: time.Now(), User: user}
-		_, err = sessions.BeginSession(ch.SessionID, ch.SessionStore, sesssionState, w)
+		_, err = sessions.BeginSession(ch.SessionID, ch.SessionStore, &SessionState{time.Now(), user}, w)
 		if err != nil {
 			log.Printf("Session cannot begin")
 			http.Error(w, "Session cannot begin", http.StatusBadRequest)
 			return
 		}
+		clientIP := r.RemoteAddr
+		if len(clientIP) == 0 {
+			clientIP = r.Header.Get("X-Forwarded-For")
+		}
+
 		// writing response to the clients
 		w.Header().Set("Content-Type", "application/json")
 		// status code 201

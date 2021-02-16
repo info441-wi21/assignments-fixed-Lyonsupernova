@@ -20,7 +20,7 @@ with the following headers to all requests:
 // HeaderHandler is Middleware structure converting
 // http.Handler to HeaderHandler
 type HeaderHandler struct {
-	handler http.Handler
+	Handler http.Handler
 }
 
 func (hh *HeaderHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -30,7 +30,7 @@ func (hh *HeaderHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Access-Control-Expose-Headers", "Authorization")
 	w.Header().Set("Access-Control-Max-Age", "600")
 	start := time.Now()
-	hh.ServeHTTP(w, r)
+	hh.Handler.ServeHTTP(w, r)
 	log.Printf("%s %s %v", r.Method, r.URL.Path, time.Since(start))
 
 }

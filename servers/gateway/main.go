@@ -34,14 +34,19 @@ func main() {
 	sessionID := os.Getenv("SESSIONKEY")
 	redisAddr := os.Getenv("REDISADDR")
 	DSN := os.Getenv("DSN")
+	if len(redisAddr) == 0 {
+		redisAddr = "127.0.0.1:6379"
+	}
 	redisDB := redis.NewClient(&redis.Options{
 		Addr: redisAddr,
 	})
 	sessionStore := sessions.NewRedisStore(redisDB, time.Hour)
+
 	userStore, err := users.NewMySQLStore(DSN)
 	if err != nil {
-		log.Printf("Unable to open database mysql")
+		log.Printf("Unable to open database mysql %v", err)
 	}
+
 	contextHandler := &handlers.ContextHandler{
 		SessionID:    sessionID,
 		SessionStore: sessionStore,
@@ -57,5 +62,6 @@ func main() {
 	mux.HandleFunc("/v1/users/", contextHandler.SpecificUserHandler)
 	mux.HandleFunc("/v1/sessions", contextHandler.SessionsHandler)
 	mux.HandleFunc("/v1/sessions/", contextHandler.SpecificSessionHandler)
-	log.Fatal(http.ListenAndServeTLS(addr, TLSCERT, TLSKEY, mux))
+	wrappedMux := handlers.NewHeaderHandler(mux)
+	log.Fatal(http.ListenAndServeTLS(addr, TLSCERT, TLSKEY, wrappedMux))
 }

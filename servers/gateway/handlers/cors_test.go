@@ -41,7 +41,7 @@ func TestServeHTTP(t *testing.T) {
 	for _, ca := range cases {
 		value := req.Header.Get(ca.key)
 		if value != ca.expectedValue {
-			t.Errorf("%v has incorrect output, expected value: %s, Actual Value %s", c.key, c.expectedValue, value)
+			t.Errorf("%v has incorrect output, expected value: %s, Actual Value %s", ca.key, ca.expectedValue, value)
 		}
 	}
 
