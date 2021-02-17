@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"testing"
 )
 
@@ -107,32 +106,38 @@ func TestUsersHandler(t *testing.T) {
 // Test SpecificUserHandler
 func TestSpecificUserHandler(t *testing.T) {
 
+	_, err := sessions.NewSessionID("random")
+	if err != nil {
+		log.Printf("Didn't generate sessionsID")
+	}
 	userStore := &users.DummyMySQLStore{}
-	sess := sessions.NewMemStore(100, 10)
+	sess := sessions.NewMemStore(1000, 100)
 	contextHandler := &ContextHandler{
 		SessionID:    "ramdom",
 		SessionStore: sess,
 		UserStore:    userStore,
 	}
 
-	// Create a dummy user to test for
-	user := &users.NewUser{
-		Email:        "secondEmail@gmail.com",
-		Password:     "123535",
-		PasswordConf: "123535",
-		UserName:     "usertwo",
-		FirstName:    "bat",
-		LastName:     "man",
-	}
+	/*
+		// Create a dummy user to test for
+		user := &users.NewUser{
+			Email:        "secondEmail@gmail.com",
+			Password:     "123535",
+			PasswordConf: "123535",
+			UserName:     "usertwo",
+			FirstName:    "bat",
+			LastName:     "man",
+		}
 
-	rr := httptest.NewRecorder()
-	registerUser(user, contextHandler, rr)
+		rr := httptest.NewRecorder()
+		registerUser(user, contextHandler, rr)
 
-	// Retrieve user id from the response for further testings
-	var response *users.User
-	response = new(users.User)
-	json.Unmarshal(rr.Body.Bytes(), &user)
-	userID := response.ID
+		// Retrieve user id from the response for further testings
+		var response *users.User
+		response = new(users.User)
+		json.Unmarshal(rr.Body.Bytes(), &user)
+		userID := response.ID
+	*/
 
 	// start testing cases
 	cases := []struct {
@@ -141,86 +146,91 @@ func TestSpecificUserHandler(t *testing.T) {
 		method           string
 		contentType      string
 		expectedResponse int
+		user             *users.User
 	}{
 		{
 			"SpecificUserHandler1",
 			"iaminvalidID",
-			"GET",
+			http.MethodGet,
 			"",
-			http.StatusNotFound,
+			http.StatusUnauthorized,
+			&users.User{
+				ID: 492012,
+			},
 		},
 		{
 			"SpecificUserHandler2",
-			fmt.Sprint(userID),
-			"GET",
+			"123456",
+			http.MethodGet,
 			"",
 			http.StatusOK,
+			&users.User{
+				ID: 123456,
+			},
 		},
 		{
 			"SpecificUserHandler3",
-			"me",
-			"GET",
+			"23456",
+			http.MethodGet,
 			"",
 			http.StatusOK,
+			&users.User{
+				ID: 23456,
+			},
 		},
 		{
 			"SpecificUserHandler4",
 			"notme",
-			"PATCH",
+			http.MethodPatch,
 			"application/json",
 			http.StatusForbidden,
+			&users.User{
+				ID: 23456,
+			},
 		},
 		{
 			"SpecificUserHandler5",
-			"me",
-			"PATCH",
+			"989555",
+			http.MethodPatch,
 			"application/notjson",
 			http.StatusUnsupportedMediaType,
+			&users.User{
+				ID: 989555,
+			},
 		},
 		{
 			"SpecificUserHandler6",
-			"me",
-			"PATCH",
+			"896967",
+			http.MethodPatch,
 			"application/json",
 			http.StatusOK,
+			&users.User{
+				ID: 896967,
+			},
 		},
 		{
 			"SpecificUserHandler7",
 			"me",
-			"POST",
+			http.MethodPost,
 			"application/json",
 			http.StatusMethodNotAllowed,
+			&users.User{},
 		},
 	}
 
 	for _, c := range cases {
 		log.Printf("Testing %s ...", c.sampleID)
-		req, _ := http.NewRequest(c.method, "/v1/users/"+c.id, nil)
+		req, err := http.NewRequest(c.method, "/v1/users/"+c.id, nil)
+		if err != nil {
+			log.Printf("Error generating Newrequest")
+		}
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(contextHandler.UsersHandler)
+		handler := http.HandlerFunc(contextHandler.SpecificUserHandler)
 		handler.ServeHTTP(rr, req)
 		// checks if it returns with a correct status code
 		if status := rr.Code; status != c.expectedResponse {
 			t.Errorf("Instead of status %d, handler response with %d http status",
 				c.expectedResponse, status)
-		}
-		// checks if it returns a complete json
-		var values reflect.Value
-		if c.method == "GET" {
-			var user *users.User
-			user = new(users.User)
-			json.Unmarshal(rr.Body.Bytes(), &user)
-			values = reflect.ValueOf(user)
-		} else {
-			var update *users.Updates
-			update = new(users.Updates)
-			json.Unmarshal(rr.Body.Bytes(), &update)
-			values = reflect.ValueOf(update)
-		}
-		for i := 0; i < values.NumField(); i++ {
-			if values.Field(i).Interface() == nil {
-				t.Errorf("Response json does not have %s", fmt.Sprint(values.Field(i)))
-			}
 		}
 		log.Printf("%s Passed", c.sampleID)
 	}
@@ -286,18 +296,13 @@ func TestSessionsHandler(t *testing.T) {
 
 	for _, c := range cases {
 		log.Printf("Testing %s ...", c.sampleID)
-		var req *http.Request
-		if c.credentails != nil {
-			reqBody := new(bytes.Buffer)
-			bufEncode := json.NewEncoder(reqBody)
-			bufEncode.Encode(c.credentails)
-			//reqBody, _ := json.Marshal(c.credentails)
-			req, _ = http.NewRequest(c.method, "/v1/sessions", bytes.NewReader(reqBody.Bytes()))
-		} else {
-			req, _ = http.NewRequest(c.method, "/v1/sessions", nil)
-		}
+		reqBody := new(bytes.Buffer)
+		bufEncode := json.NewEncoder(reqBody)
+		bufEncode.Encode(c.credentails)
+		req, _ := http.NewRequest(c.method, "/v1/sessions", bytes.NewReader(reqBody.Bytes()))
+		req.Header.Set("contentType", c.contentType)
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(contextHandler.UsersHandler)
+		handler := http.HandlerFunc(contextHandler.SessionsHandler)
 		handler.ServeHTTP(rr, req)
 		// checks if it returns with a correct status code
 		if status := rr.Code; status != c.expectedResponse {
@@ -360,7 +365,7 @@ func TestSpecificSessionHandler(t *testing.T) {
 		log.Printf("Testing %s ...", c.sampleID)
 		req, _ := http.NewRequest(c.method, "/v1/sessions/"+c.lastURL, nil)
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(contextHandler.UsersHandler)
+		handler := http.HandlerFunc(contextHandler.SpecificSessionHandler)
 		handler.ServeHTTP(rr, req)
 		// checks if it returns with a correct status code
 		if status := rr.Code; status != c.expectedResponse {
@@ -383,5 +388,29 @@ func registerUser(user *users.NewUser, contextHandler *ContextHandler,
 	handler.ServeHTTP(rr, req)
 	if status := rr.Code; status != http.StatusOK {
 		fmt.Errorf("Didn't register the user successfully")
+	}
+}
+
+// A helper function to generate a user
+func dumyNewUser() *users.NewUser {
+	return &users.NewUser{
+		Email:        "ForthEmail@gmail.com",
+		Password:     "123535",
+		PasswordConf: "123535",
+		UserName:     "usertwo",
+		FirstName:    "bat",
+		LastName:     "man",
+	}
+}
+
+func dumySpecifiedUser(id int64) *users.User {
+	return &users.User{
+		ID:        id,
+		Email:     "Fifthemail@gmail.com",
+		PassHash:  []byte("password123"),
+		UserName:  "Dragon",
+		FirstName: "Dragon",
+		LastName:  "Man",
+		PhotoURL:  "SomeURL",
 	}
 }
