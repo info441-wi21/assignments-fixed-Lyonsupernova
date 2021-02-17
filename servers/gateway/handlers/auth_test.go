@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -22,41 +23,48 @@ func TestUsersHandler(t *testing.T) {
 	for _, method := range invalidMethods {
 		req, _ := http.NewRequest(method, "/v1/users", nil)
 		rr := httptest.NewRecorder()
-		contextHandler.UsersHandler(rr, req)
+		handler := http.HandlerFunc(contextHandler.UsersHandler)
+		handler(rr, req)
 		if status := rr.Code; status != http.StatusMethodNotAllowed {
 			t.Errorf("UserHandler accpet wrong methods %s", method)
 		}
 	}
+	log.Printf("Finish methods tests")
 
 	cases := []struct {
-		expectedResponse int
+		sampleID         string
 		contenType       string
+		expectedResponse int
 		userFile         *users.NewUser
 	}{
 		{
-			http.StatusUnsupportedMediaType,
+			"UsersHandler1",
 			"application/x-www-form-urlencoded",
-			nil,
+			http.StatusUnsupportedMediaType,
+			&users.NewUser{},
 		},
 		{
-			http.StatusBadRequest,
+			"UsersHandler2",
 			"application/json",
-			nil,
+			http.StatusBadRequest,
+			&users.NewUser{},
 		},
 		{
-			http.StatusBadRequest,
+			"UsersHandler3",
 			"application/json",
+			http.StatusBadRequest,
 			&users.NewUser{
 				Email: "aabbcc",
 			},
 		},
 		{
-			http.StatusCreated,
+			"UsersHandler4",
 			"application/json",
+			http.StatusCreated,
 			&users.NewUser{
-				Email:        "aabbcc",
-				Password:     "abc",
-				PasswordConf: "notsurewhatisthis",
+				Email:        "aabbcc@gmail.com",
+				Password:     "abcefg",
+				PasswordConf: "abcefg",
 				UserName:     "userOne",
 				FirstName:    "U",
 				LastName:     "Ser",
@@ -65,20 +73,24 @@ func TestUsersHandler(t *testing.T) {
 	}
 
 	for _, c := range cases {
+		log.Printf("Testing %s ...", c.sampleID)
 		reqBody, _ := json.Marshal(c.userFile)
 		req, _ := http.NewRequest("POST", "/v1/users", bytes.NewReader(reqBody))
 		req.Header.Set("Content-Type", c.contenType)
 		rr := httptest.NewRecorder()
-		contextHandler.UsersHandler(rr, req)
+		handler := http.HandlerFunc(contextHandler.UsersHandler)
+		handler(rr, req)
 		if status := rr.Code; status != c.expectedResponse {
 			t.Errorf("Instead of status %d, UserHandler response with %d http status",
 				c.expectedResponse, status)
 		}
 		var user *users.User
+		user = new(users.User)
 		json.Unmarshal(rr.Body.Bytes(), &user)
 		if user.PassHash != nil || user.Email != "" {
 			t.Errorf("Response with unnecessary PassHash or Email")
 		}
+		log.Printf("%s Passed", c.sampleID)
 	}
 }
 
@@ -90,8 +102,8 @@ func TestSpecificUserHandler(t *testing.T) {
 	// Create a dummy user to test for
 	user := &users.NewUser{
 		Email:        "secondEmail@gmail.com",
-		Password:     "123",
-		PasswordConf: "456",
+		Password:     "123535",
+		PasswordConf: "123535",
 		UserName:     "usertwo",
 		FirstName:    "bat",
 		LastName:     "man",
@@ -102,53 +114,62 @@ func TestSpecificUserHandler(t *testing.T) {
 
 	// Retrieve user id from the response for further testings
 	var response *users.User
+	response = new(users.User)
 	json.Unmarshal(rr.Body.Bytes(), &user)
 	userID := response.ID
 
 	// start testing cases
 	cases := []struct {
+		sampleID         string
 		id               string
 		method           string
 		contentType      string
 		expectedResponse int
 	}{
 		{
+			"SpecificUserHandler1",
 			"iaminvalidID",
 			"GET",
 			"",
 			http.StatusNotFound,
 		},
 		{
+			"SpecificUserHandler2",
 			fmt.Sprint(userID),
 			"GET",
 			"",
 			http.StatusOK,
 		},
 		{
+			"SpecificUserHandler3",
 			"me",
 			"GET",
 			"",
 			http.StatusOK,
 		},
 		{
+			"SpecificUserHandler4",
 			"notme",
 			"PATCH",
 			"application/json",
 			http.StatusForbidden,
 		},
 		{
+			"SpecificUserHandler5",
 			"me",
 			"PATCH",
 			"application/notjson",
 			http.StatusUnsupportedMediaType,
 		},
 		{
+			"SpecificUserHandler6",
 			"me",
 			"PATCH",
 			"application/json",
 			http.StatusOK,
 		},
 		{
+			"SpecificUserHandler7",
 			"me",
 			"POST",
 			"application/json",
@@ -157,9 +178,11 @@ func TestSpecificUserHandler(t *testing.T) {
 	}
 
 	for _, c := range cases {
+		log.Printf("Testing %s ...", c.sampleID)
 		req, _ := http.NewRequest(c.method, "/v1/users/"+c.id, nil)
 		rr := httptest.NewRecorder()
-		contextHandler.UsersHandler(rr, req)
+		handler := http.HandlerFunc(contextHandler.UsersHandler)
+		handler(rr, req)
 		// checks if it returns with a correct status code
 		if status := rr.Code; status != c.expectedResponse {
 			t.Errorf("Instead of status %d, UserHandler response with %d http status",
@@ -169,10 +192,12 @@ func TestSpecificUserHandler(t *testing.T) {
 		var values reflect.Value
 		if c.method == "GET" {
 			var user *users.User
+			user = new(users.User)
 			json.Unmarshal(rr.Body.Bytes(), &user)
 			values = reflect.ValueOf(user)
 		} else {
 			var update *users.Updates
+			update = new(users.Updates)
 			json.Unmarshal(rr.Body.Bytes(), &update)
 			values = reflect.ValueOf(update)
 		}
@@ -181,6 +206,7 @@ func TestSpecificUserHandler(t *testing.T) {
 				t.Errorf("Response json does not have %s", fmt.Sprint(values.Field(i)))
 			}
 		}
+		log.Printf("%s Passed", c.sampleID)
 	}
 }
 
@@ -190,8 +216,8 @@ func TestSessionsHandler(t *testing.T) {
 	// Create a dummy user to test for
 	user := &users.NewUser{
 		Email:        "thridEmail@gmail.com",
-		Password:     "123",
-		PasswordConf: "456",
+		Password:     "513451",
+		PasswordConf: "513451",
 		UserName:     "userThree",
 		FirstName:    "super",
 		LastName:     "man",
@@ -199,7 +225,7 @@ func TestSessionsHandler(t *testing.T) {
 
 	credential := &users.Credentials{
 		Email:    "thridEmail@gmail.com",
-		Password: "123",
+		Password: "513451",
 	}
 
 	rr := httptest.NewRecorder()
@@ -207,24 +233,28 @@ func TestSessionsHandler(t *testing.T) {
 
 	// Start test cases
 	cases := []struct {
+		sampleID         string
 		method           string
 		contentType      string
 		expectedResponse int
 		credentails      *users.Credentials
 	}{
 		{
+			"SessionsHandler1",
 			"GET",
 			"",
 			http.StatusMethodNotAllowed,
 			nil,
 		},
 		{
+			"SessionsHandler2",
 			"POST",
 			"application/x-www-form-urlencoded",
 			http.StatusUnsupportedMediaType,
 			nil,
 		},
 		{
+			"SessionsHandler3",
 			"POST",
 			"application/json",
 			http.StatusCreated,
@@ -233,6 +263,7 @@ func TestSessionsHandler(t *testing.T) {
 	}
 
 	for _, c := range cases {
+		log.Printf("Testing %s ...", c.sampleID)
 		var req *http.Request
 		if c.credentails != nil {
 			reqBody, _ := json.Marshal(c.credentails)
@@ -241,12 +272,14 @@ func TestSessionsHandler(t *testing.T) {
 			req, _ = http.NewRequest(c.method, "/v1/sessions", nil)
 		}
 		rr := httptest.NewRecorder()
-		contextHandler.UsersHandler(rr, req)
+		handler := http.HandlerFunc(contextHandler.UsersHandler)
+		handler(rr, req)
 		// checks if it returns with a correct status code
 		if status := rr.Code; status != c.expectedResponse {
 			t.Errorf("Instead of status %d, UserHandler response with %d http status",
 				c.expectedResponse, status)
 		}
+		log.Printf("%s Passed", c.sampleID)
 	}
 }
 
@@ -256,8 +289,8 @@ func TestSpecificSessionHandler(t *testing.T) {
 	// Create a dummy user to test for
 	user := &users.NewUser{
 		Email:        "forthEmail@gmail.com",
-		Password:     "123",
-		PasswordConf: "456",
+		Password:     "1236135",
+		PasswordConf: "1236135",
 		UserName:     "userFour",
 		FirstName:    "spider",
 		LastName:     "man",
@@ -267,21 +300,25 @@ func TestSpecificSessionHandler(t *testing.T) {
 	registerUser(user, contextHandler, rr)
 
 	cases := []struct {
+		sampleID         string
 		method           string
 		lastURL          string
 		expectedResponse int
 	}{
 		{
+			"SpecificSessionHandler1",
 			"GET",
 			"mine",
 			http.StatusMethodNotAllowed,
 		},
 		{
+			"SpecificSessionHandler2",
 			"DELETE",
 			"me",
 			http.StatusForbidden,
 		},
 		{
+			"SpecificSessionHandler3",
 			"DELET",
 			"mine",
 			http.StatusOK,
@@ -289,16 +326,18 @@ func TestSpecificSessionHandler(t *testing.T) {
 	}
 
 	for _, c := range cases {
+		log.Printf("Testing %s ...", c.sampleID)
 		req, _ := http.NewRequest(c.method, "/v1/sessions/"+c.lastURL, nil)
 		rr := httptest.NewRecorder()
-		contextHandler.UsersHandler(rr, req)
+		handler := http.HandlerFunc(contextHandler.UsersHandler)
+		handler(rr, req)
 		// checks if it returns with a correct status code
 		if status := rr.Code; status != c.expectedResponse {
 			t.Errorf("Instead of status %d, UserHandler response with %d http status",
 				c.expectedResponse, status)
 		}
+		log.Printf("%s Passed", c.sampleID)
 	}
-
 }
 
 // A helper function to register for a dummy user
@@ -306,7 +345,8 @@ func registerUser(user *users.NewUser, contextHandler *ContextHandler,
 	rr *httptest.ResponseRecorder) {
 	reqBody, _ := json.Marshal(user)
 	req, _ := http.NewRequest("POST", "/v1/users", bytes.NewReader(reqBody))
-	contextHandler.UsersHandler(rr, req)
+	handler := http.HandlerFunc(contextHandler.UsersHandler)
+	handler(rr, req)
 	if status := rr.Code; status != http.StatusOK {
 		fmt.Errorf("Didn't register the user successfully")
 	}
