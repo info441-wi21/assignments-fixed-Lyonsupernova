@@ -15,7 +15,8 @@ import (
 // Test UsersHandler handler
 func TestUsersHandler(t *testing.T) {
 
-	contextHandler := &ContextHandler{}
+	userStore := &users.FakeMySQLStore{}
+	sessStore := sessions.NewRedisStore(redis.NewClient(&redis.Options{Addr: "127.0.0.1:6379"}), 3600)
 	// Check different methods
 	invalidMethods := [8]string{"GET", "HEAD", "PUT", "DELETE", "CONNECT", "OPTIONS",
 		"TRACE", "PATCH"}
@@ -24,7 +25,7 @@ func TestUsersHandler(t *testing.T) {
 		req, _ := http.NewRequest(method, "/v1/users", nil)
 		rr := httptest.NewRecorder()
 		handler := http.HandlerFunc(contextHandler.UsersHandler)
-		handler.ServeHTTP(rr, req)
+		handler(rr, req)
 		if status := rr.Code; status != http.StatusMethodNotAllowed {
 			t.Errorf("UserHandler accpet wrong methods %s", method)
 		}
@@ -82,7 +83,7 @@ func TestUsersHandler(t *testing.T) {
 		req.Header.Set("Content-Type", c.contenType)
 		rr := httptest.NewRecorder()
 		handler := http.HandlerFunc(contextHandler.UsersHandler)
-		handler.ServeHTTP(rr, req)
+		handler(rr, req)
 		if status := rr.Code; status != c.expectedResponse {
 			t.Errorf("Instead of status %d, UserHandler response with %d http status",
 				c.expectedResponse, status)
@@ -185,7 +186,7 @@ func TestSpecificUserHandler(t *testing.T) {
 		req, _ := http.NewRequest(c.method, "/v1/users/"+c.id, nil)
 		rr := httptest.NewRecorder()
 		handler := http.HandlerFunc(contextHandler.UsersHandler)
-		handler.ServeHTTP(rr, req)
+		handler(rr, req)
 		// checks if it returns with a correct status code
 		if status := rr.Code; status != c.expectedResponse {
 			t.Errorf("Instead of status %d, UserHandler response with %d http status",
@@ -279,7 +280,7 @@ func TestSessionsHandler(t *testing.T) {
 		}
 		rr := httptest.NewRecorder()
 		handler := http.HandlerFunc(contextHandler.UsersHandler)
-		handler.ServeHTTP(rr, req)
+		handler(rr, req)
 		// checks if it returns with a correct status code
 		if status := rr.Code; status != c.expectedResponse {
 			t.Errorf("Instead of status %d, UserHandler response with %d http status",
@@ -336,7 +337,7 @@ func TestSpecificSessionHandler(t *testing.T) {
 		req, _ := http.NewRequest(c.method, "/v1/sessions/"+c.lastURL, nil)
 		rr := httptest.NewRecorder()
 		handler := http.HandlerFunc(contextHandler.UsersHandler)
-		handler.ServeHTTP(rr, req)
+		handler(rr, req)
 		// checks if it returns with a correct status code
 		if status := rr.Code; status != c.expectedResponse {
 			t.Errorf("Instead of status %d, UserHandler response with %d http status",
@@ -355,7 +356,7 @@ func registerUser(user *users.NewUser, contextHandler *ContextHandler,
 	//reqBody, _ := json.Marshal(user)
 	req, _ := http.NewRequest("POST", "/v1/users", bytes.NewReader(reqBody.Bytes()))
 	handler := http.HandlerFunc(contextHandler.UsersHandler)
-	handler.ServeHTTP(rr, req)
+	handler(rr, req)
 	if status := rr.Code; status != http.StatusOK {
 		fmt.Errorf("Didn't register the user successfully")
 	}

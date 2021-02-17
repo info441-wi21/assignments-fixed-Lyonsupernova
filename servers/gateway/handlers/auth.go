@@ -4,6 +4,7 @@ import (
 	"assignments-fixed-Lyonsupernova/servers/gateway/models/users"
 	"assignments-fixed-Lyonsupernova/servers/gateway/sessions"
 	"encoding/json"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"path/filepath"
@@ -26,7 +27,9 @@ func (ch *ContextHandler) UsersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	// usr type users.NewUser
 	newUsr := &users.NewUser{}
-	err := json.NewDecoder(r.Body).Decode(newUsr)
+	// err := json.NewDecoder(r.Body).Decode(newUsr)
+	jsonResponseBody, _ := ioutil.ReadAll(r.Body)
+	err := json.Unmarshal([]byte(jsonResponseBody), newUsr)
 	if err != nil {
 		log.Printf("error decoding JSON: %v\n", err)
 		http.Error(w, "Bad request", http.StatusBadRequest)
@@ -44,6 +47,7 @@ func (ch *ContextHandler) UsersHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
+
 	insertUsr, err := ch.UserStore.Insert(usr)
 	if err != nil {
 		log.Printf("User database insert error")
@@ -145,7 +149,7 @@ func (ch *ContextHandler) SpecificUserHandler(w http.ResponseWriter, r *http.Req
 			http.Error(w, "Bad request", http.StatusBadRequest)
 			return
 		}
-		update_usr, err := ch.UserStore.Update(sessionState.User.ID, newUsr)
+		updateUsr, err := ch.UserStore.Update(sessionState.User.ID, newUsr)
 		if err != nil {
 			log.Printf("updated failed")
 			http.Error(w, "updated error found", http.StatusBadRequest)
@@ -155,12 +159,12 @@ func (ch *ContextHandler) SpecificUserHandler(w http.ResponseWriter, r *http.Req
 		w.Header().Set("Content-Type", "application/json")
 		// status code 200
 		w.WriteHeader(http.StatusOK)
-		if err := json.NewEncoder(w).Encode(update_usr); err != nil {
+		if err := json.NewEncoder(w).Encode(updateUsr); err != nil {
 			log.Printf("User profile cannot be encoded in JSON format")
 			http.Error(w, "Bad request", http.StatusBadRequest)
 			return
 		}
-		json, _ := json.Marshal(update_usr)
+		json, _ := json.Marshal(updateUsr)
 		w.Write([]byte(json))
 	} else {
 		http.Error(w, "Error request method", http.StatusMethodNotAllowed)
