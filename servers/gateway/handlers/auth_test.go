@@ -151,7 +151,7 @@ func TestSpecificUserHandler(t *testing.T) {
 		},
 		{
 			"SpecificUserHandler2",
-			fmt.Sprint(userID),
+			"fmt.Sprint(userID)",
 			"GET",
 			"",
 			http.StatusOK,
