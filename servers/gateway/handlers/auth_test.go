@@ -24,7 +24,7 @@ func TestUsersHandler(t *testing.T) {
 		req, _ := http.NewRequest(method, "/v1/users", nil)
 		rr := httptest.NewRecorder()
 		handler := http.HandlerFunc(contextHandler.UsersHandler)
-		handler(rr, req)
+		handler.ServeHTTP(rr, req)
 		if status := rr.Code; status != http.StatusMethodNotAllowed {
 			t.Errorf("UserHandler accpet wrong methods %s", method)
 		}
@@ -82,7 +82,7 @@ func TestUsersHandler(t *testing.T) {
 		req.Header.Set("Content-Type", c.contenType)
 		rr := httptest.NewRecorder()
 		handler := http.HandlerFunc(contextHandler.UsersHandler)
-		handler(rr, req)
+		handler.ServeHTTP(rr, req)
 		if status := rr.Code; status != c.expectedResponse {
 			t.Errorf("Instead of status %d, UserHandler response with %d http status",
 				c.expectedResponse, status)
@@ -185,7 +185,7 @@ func TestSpecificUserHandler(t *testing.T) {
 		req, _ := http.NewRequest(c.method, "/v1/users/"+c.id, nil)
 		rr := httptest.NewRecorder()
 		handler := http.HandlerFunc(contextHandler.UsersHandler)
-		handler(rr, req)
+		handler.ServeHTTP(rr, req)
 		// checks if it returns with a correct status code
 		if status := rr.Code; status != c.expectedResponse {
 			t.Errorf("Instead of status %d, UserHandler response with %d http status",
@@ -279,7 +279,7 @@ func TestSessionsHandler(t *testing.T) {
 		}
 		rr := httptest.NewRecorder()
 		handler := http.HandlerFunc(contextHandler.UsersHandler)
-		handler(rr, req)
+		handler.ServeHTTP(rr, req)
 		// checks if it returns with a correct status code
 		if status := rr.Code; status != c.expectedResponse {
 			t.Errorf("Instead of status %d, UserHandler response with %d http status",
@@ -336,7 +336,7 @@ func TestSpecificSessionHandler(t *testing.T) {
 		req, _ := http.NewRequest(c.method, "/v1/sessions/"+c.lastURL, nil)
 		rr := httptest.NewRecorder()
 		handler := http.HandlerFunc(contextHandler.UsersHandler)
-		handler(rr, req)
+		handler.ServeHTTP(rr, req)
 		// checks if it returns with a correct status code
 		if status := rr.Code; status != c.expectedResponse {
 			t.Errorf("Instead of status %d, UserHandler response with %d http status",
@@ -355,7 +355,7 @@ func registerUser(user *users.NewUser, contextHandler *ContextHandler,
 	//reqBody, _ := json.Marshal(user)
 	req, _ := http.NewRequest("POST", "/v1/users", bytes.NewReader(reqBody.Bytes()))
 	handler := http.HandlerFunc(contextHandler.UsersHandler)
-	handler(rr, req)
+	handler.ServeHTTP(rr, req)
 	if status := rr.Code; status != http.StatusOK {
 		fmt.Errorf("Didn't register the user successfully")
 	}
