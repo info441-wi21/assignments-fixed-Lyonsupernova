@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 )
 
@@ -106,12 +107,8 @@ func TestUsersHandler(t *testing.T) {
 // Test SpecificUserHandler
 func TestSpecificUserHandler(t *testing.T) {
 
-	_, err := sessions.NewSessionID("random")
-	if err != nil {
-		log.Printf("Didn't generate sessionsID")
-	}
 	userStore := &users.DummyMySQLStore{}
-	sess := sessions.NewMemStore(1000, 100)
+	sess := sessions.NewMemStore(100, 10)
 	contextHandler := &ContextHandler{
 		SessionID:    "ramdom",
 		SessionStore: sess,
@@ -144,91 +141,86 @@ func TestSpecificUserHandler(t *testing.T) {
 		method           string
 		contentType      string
 		expectedResponse int
-		user             *users.User
 	}{
 		{
 			"SpecificUserHandler1",
 			"iaminvalidID",
-			http.MethodGet,
+			"GET",
 			"",
-			http.StatusUnauthorized,
-			&users.User{
-				ID: 492012,
-			},
+			http.StatusNotFound,
 		},
 		{
 			"SpecificUserHandler2",
-			"123456",
-			http.MethodGet,
+			fmt.Sprint(userID),
+			"GET",
 			"",
 			http.StatusOK,
-			&users.User{
-				ID: 123456,
-			},
 		},
 		{
 			"SpecificUserHandler3",
-			"23456",
-			http.MethodGet,
+			"me",
+			"GET",
 			"",
 			http.StatusOK,
-			&users.User{
-				ID: 23456,
-			},
 		},
 		{
 			"SpecificUserHandler4",
 			"notme",
-			http.MethodPatch,
+			"PATCH",
 			"application/json",
 			http.StatusForbidden,
-			&users.User{
-				ID: 23456,
-			},
 		},
 		{
 			"SpecificUserHandler5",
-			"989555",
-			http.MethodPatch,
+			"me",
+			"PATCH",
 			"application/notjson",
 			http.StatusUnsupportedMediaType,
-			&users.User{
-				ID: 989555,
-			},
 		},
 		{
 			"SpecificUserHandler6",
-			"896967",
-			http.MethodPatch,
+			"me",
+			"PATCH",
 			"application/json",
 			http.StatusOK,
-			&users.User{
-				ID: 896967,
-			},
 		},
 		{
 			"SpecificUserHandler7",
 			"me",
-			http.MethodPost,
+			"POST",
 			"application/json",
 			http.StatusMethodNotAllowed,
-			&users.User{},
 		},
 	}
 
 	for _, c := range cases {
 		log.Printf("Testing %s ...", c.sampleID)
-		req, err := http.NewRequest(c.method, "/v1/users/"+c.id, nil)
-		if err != nil {
-			log.Printf("Error generating Newrequest")
-		}
+		req, _ := http.NewRequest(c.method, "/v1/users/"+c.id, nil)
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(contextHandler.SpecificUserHandler)
+		handler := http.HandlerFunc(contextHandler.UsersHandler)
 		handler.ServeHTTP(rr, req)
 		// checks if it returns with a correct status code
 		if status := rr.Code; status != c.expectedResponse {
 			t.Errorf("Instead of status %d, handler response with %d http status",
 				c.expectedResponse, status)
+		}
+		// checks if it returns a complete json
+		var values reflect.Value
+		if c.method == "GET" {
+			var user *users.User
+			user = new(users.User)
+			json.Unmarshal(rr.Body.Bytes(), &user)
+			values = reflect.ValueOf(user)
+		} else {
+			var update *users.Updates
+			update = new(users.Updates)
+			json.Unmarshal(rr.Body.Bytes(), &update)
+			values = reflect.ValueOf(update)
+		}
+		for i := 0; i < values.NumField(); i++ {
+			if values.Field(i).Interface() == nil {
+				t.Errorf("Response json does not have %s", fmt.Sprint(values.Field(i)))
+			}
 		}
 		log.Printf("%s Passed", c.sampleID)
 	}
@@ -294,13 +286,18 @@ func TestSessionsHandler(t *testing.T) {
 
 	for _, c := range cases {
 		log.Printf("Testing %s ...", c.sampleID)
-		reqBody := new(bytes.Buffer)
-		bufEncode := json.NewEncoder(reqBody)
-		bufEncode.Encode(c.credentails)
-		req, _ := http.NewRequest(c.method, "/v1/sessions", bytes.NewReader(reqBody.Bytes()))
-		req.Header.Set("contentType", c.contentType)
+		var req *http.Request
+		if c.credentails != nil {
+			reqBody := new(bytes.Buffer)
+			bufEncode := json.NewEncoder(reqBody)
+			bufEncode.Encode(c.credentails)
+			//reqBody, _ := json.Marshal(c.credentails)
+			req, _ = http.NewRequest(c.method, "/v1/sessions", bytes.NewReader(reqBody.Bytes()))
+		} else {
+			req, _ = http.NewRequest(c.method, "/v1/sessions", nil)
+		}
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(contextHandler.SessionsHandler)
+		handler := http.HandlerFunc(contextHandler.UsersHandler)
 		handler.ServeHTTP(rr, req)
 		// checks if it returns with a correct status code
 		if status := rr.Code; status != c.expectedResponse {
@@ -363,7 +360,7 @@ func TestSpecificSessionHandler(t *testing.T) {
 		log.Printf("Testing %s ...", c.sampleID)
 		req, _ := http.NewRequest(c.method, "/v1/sessions/"+c.lastURL, nil)
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(contextHandler.SpecificSessionHandler)
+		handler := http.HandlerFunc(contextHandler.UsersHandler)
 		handler.ServeHTTP(rr, req)
 		// checks if it returns with a correct status code
 		if status := rr.Code; status != c.expectedResponse {
@@ -386,29 +383,5 @@ func registerUser(user *users.NewUser, contextHandler *ContextHandler,
 	handler.ServeHTTP(rr, req)
 	if status := rr.Code; status != http.StatusOK {
 		fmt.Errorf("Didn't register the user successfully")
-	}
-}
-
-// A helper function to generate a user
-func dumyNewUser() *users.NewUser {
-	return &users.NewUser{
-		Email:        "ForthEmail@gmail.com",
-		Password:     "123535",
-		PasswordConf: "123535",
-		UserName:     "usertwo",
-		FirstName:    "bat",
-		LastName:     "man",
-	}
-}
-
-func dumySpecifiedUser(id int64) *users.User {
-	return &users.User{
-		ID:        id,
-		Email:     "Fifthemail@gmail.com",
-		PassHash:  []byte("password123"),
-		UserName:  "Dragon",
-		FirstName: "Dragon",
-		LastName:  "Man",
-		PhotoURL:  "SomeURL",
 	}
 }
