@@ -74,8 +74,11 @@ func TestUsersHandler(t *testing.T) {
 
 	for _, c := range cases {
 		log.Printf("Testing %s ...", c.sampleID)
-		reqBody, _ := json.Marshal(c.userFile)
-		req, _ := http.NewRequest("POST", "/v1/users", bytes.NewReader(reqBody))
+		reqBody := new(bytes.Buffer)
+		bufEncode := json.NewEncoder(reqBody)
+		bufEncode.Encode(c.userFile)
+		//reqBody, _ := json.Marshal(c.userFile)
+		req, _ := http.NewRequest("POST", "/v1/users", bytes.NewReader(reqBody.Bytes()))
 		req.Header.Set("Content-Type", c.contenType)
 		rr := httptest.NewRecorder()
 		handler := http.HandlerFunc(contextHandler.UsersHandler)
@@ -266,8 +269,11 @@ func TestSessionsHandler(t *testing.T) {
 		log.Printf("Testing %s ...", c.sampleID)
 		var req *http.Request
 		if c.credentails != nil {
-			reqBody, _ := json.Marshal(c.credentails)
-			req, _ = http.NewRequest(c.method, "/v1/sessions", bytes.NewReader(reqBody))
+			reqBody := new(bytes.Buffer)
+			bufEncode := json.NewEncoder(reqBody)
+			bufEncode.Encode(c.credentails)
+			//reqBody, _ := json.Marshal(c.credentails)
+			req, _ = http.NewRequest(c.method, "/v1/sessions", bytes.NewReader(reqBody.Bytes()))
 		} else {
 			req, _ = http.NewRequest(c.method, "/v1/sessions", nil)
 		}
@@ -343,8 +349,11 @@ func TestSpecificSessionHandler(t *testing.T) {
 // A helper function to register for a dummy user
 func registerUser(user *users.NewUser, contextHandler *ContextHandler,
 	rr *httptest.ResponseRecorder) {
-	reqBody, _ := json.Marshal(user)
-	req, _ := http.NewRequest("POST", "/v1/users", bytes.NewReader(reqBody))
+	reqBody := new(bytes.Buffer)
+	bufEncode := json.NewEncoder(reqBody)
+	bufEncode.Encode(user)
+	//reqBody, _ := json.Marshal(user)
+	req, _ := http.NewRequest("POST", "/v1/users", bytes.NewReader(reqBody.Bytes()))
 	handler := http.HandlerFunc(contextHandler.UsersHandler)
 	handler(rr, req)
 	if status := rr.Code; status != http.StatusOK {
