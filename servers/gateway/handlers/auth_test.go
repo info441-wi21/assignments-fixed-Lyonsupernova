@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"assignments-fixed-Lyonsupernova/servers/gateway/models/users"
+	"assignments-fixed-Lyonsupernova/servers/gateway/sessions"
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -15,7 +16,13 @@ import (
 // Test UsersHandler handler
 func TestUsersHandler(t *testing.T) {
 
-	contextHandler := &ContextHandler{}
+	user := &users.DummyMySQLStore{}
+	sess := sessions.NewMemStore(100, 10)
+	contextHandler := &ContextHandler{
+		SessionID:    "ramdom",
+		SessionStore: sess,
+		UserStore:    user,
+	}
 	// Check different methods
 	invalidMethods := [8]string{"GET", "HEAD", "PUT", "DELETE", "CONNECT", "OPTIONS",
 		"TRACE", "PATCH"}
@@ -84,7 +91,7 @@ func TestUsersHandler(t *testing.T) {
 		handler := http.HandlerFunc(contextHandler.UsersHandler)
 		handler.ServeHTTP(rr, req)
 		if status := rr.Code; status != c.expectedResponse {
-			t.Errorf("Instead of status %d, UserHandler response with %d http status",
+			t.Errorf("Instead of status %d, handler response with %d http status",
 				c.expectedResponse, status)
 		}
 		var user *users.User
@@ -100,7 +107,13 @@ func TestUsersHandler(t *testing.T) {
 // Test SpecificUserHandler
 func TestSpecificUserHandler(t *testing.T) {
 
-	contextHandler := &ContextHandler{}
+	userStore := &users.DummyMySQLStore{}
+	sess := sessions.NewMemStore(100, 10)
+	contextHandler := &ContextHandler{
+		SessionID:    "ramdom",
+		SessionStore: sess,
+		UserStore:    userStore,
+	}
 
 	// Create a dummy user to test for
 	user := &users.NewUser{
@@ -188,7 +201,7 @@ func TestSpecificUserHandler(t *testing.T) {
 		handler.ServeHTTP(rr, req)
 		// checks if it returns with a correct status code
 		if status := rr.Code; status != c.expectedResponse {
-			t.Errorf("Instead of status %d, UserHandler response with %d http status",
+			t.Errorf("Instead of status %d, handler response with %d http status",
 				c.expectedResponse, status)
 		}
 		// checks if it returns a complete json
@@ -214,7 +227,13 @@ func TestSpecificUserHandler(t *testing.T) {
 }
 
 func TestSessionsHandler(t *testing.T) {
-	contextHandler := &ContextHandler{}
+	userStore := &users.DummyMySQLStore{}
+	sess := sessions.NewMemStore(100, 10)
+	contextHandler := &ContextHandler{
+		SessionID:    "ramdom",
+		SessionStore: sess,
+		UserStore:    userStore,
+	}
 
 	// Create a dummy user to test for
 	user := &users.NewUser{
@@ -282,7 +301,7 @@ func TestSessionsHandler(t *testing.T) {
 		handler.ServeHTTP(rr, req)
 		// checks if it returns with a correct status code
 		if status := rr.Code; status != c.expectedResponse {
-			t.Errorf("Instead of status %d, UserHandler response with %d http status",
+			t.Errorf("Instead of status %d, handler response with %d http status",
 				c.expectedResponse, status)
 		}
 		log.Printf("%s Passed", c.sampleID)
@@ -290,7 +309,13 @@ func TestSessionsHandler(t *testing.T) {
 }
 
 func TestSpecificSessionHandler(t *testing.T) {
-	contextHandler := &ContextHandler{}
+	userStore := &users.DummyMySQLStore{}
+	sess := sessions.NewMemStore(100, 10)
+	contextHandler := &ContextHandler{
+		SessionID:    "ramdom",
+		SessionStore: sess,
+		UserStore:    userStore,
+	}
 
 	// Create a dummy user to test for
 	user := &users.NewUser{
@@ -339,7 +364,7 @@ func TestSpecificSessionHandler(t *testing.T) {
 		handler.ServeHTTP(rr, req)
 		// checks if it returns with a correct status code
 		if status := rr.Code; status != c.expectedResponse {
-			t.Errorf("Instead of status %d, UserHandler response with %d http status",
+			t.Errorf("Instead of status %d, handler response with %d http status",
 				c.expectedResponse, status)
 		}
 		log.Printf("%s Passed", c.sampleID)
