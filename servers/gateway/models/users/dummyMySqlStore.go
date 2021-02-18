@@ -18,8 +18,9 @@ func (du *DummyMySQLStore) GetByEmail(email string) (*User, error) {
 	return nil, nil
 }
 
-// GetByID method
+// GetByID method 有问题
 func (du *DummyMySQLStore) GetByID(id int64) (*User, error) {
+
 	return nil, nil
 }
 
