@@ -151,7 +151,7 @@ func TestSpecificUserHandler(t *testing.T) {
 	// start testing cases
 	cases := []struct {
 		sampleID         string
-		id               string
+		userid           string
 		method           string
 		contentType      string
 		expectedResponse int
@@ -173,7 +173,7 @@ func TestSpecificUserHandler(t *testing.T) {
 		},
 		{
 			"SpecificUserHandler2",
-			"51231516",
+			"123456",
 			"GET",
 			"",
 			http.StatusOK,
@@ -257,7 +257,7 @@ func TestSpecificUserHandler(t *testing.T) {
 		}
 		handler := http.HandlerFunc(contextHandler.SpecificUserHandler)
 		rr := httptest.NewRecorder()
-		req, _ := http.NewRequest(c.method, "/v1/users/"+c.id, bytes.NewReader(body))
+		req, _ := http.NewRequest(c.method, "/v1/users/"+c.userid, bytes.NewReader(body))
 		sess := &SessionState{
 			BeginDate: time.Now(),
 			User:      c.user,
@@ -266,11 +266,8 @@ func TestSpecificUserHandler(t *testing.T) {
 		if err != nil {
 			t.Errorf("Error beginning sessions, %v", err)
 		}
-		if c.validateSessID == false {
-			req.Header.Set("Authorization", "invalidID")
-		} else {
-			req.Header.Set("Authorization", sid.String())
-		}
+		req.Header.Set("Content-Type", c.contentType)
+		req.Header.Set("Authorization", sid.String())
 		handler.ServeHTTP(rr, req)
 		err = contextHandler.SessionStore.Save(sid, sess)
 		if err != nil {

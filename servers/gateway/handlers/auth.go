@@ -116,7 +116,7 @@ func (ch *ContextHandler) SpecificUserHandler(w http.ResponseWriter, r *http.Req
 			usr, err = ch.UserStore.GetByID(userID)
 		}
 		if err != nil {
-			log.Printf("error is 2 %v", err)
+			log.Printf("error is%v", err)
 			http.Error(w, "User ID not found in session store", http.StatusNotFound)
 			return
 		}
@@ -135,7 +135,7 @@ func (ch *ContextHandler) SpecificUserHandler(w http.ResponseWriter, r *http.Req
 		if base != "me" {
 			userID, err := strconv.ParseInt(base, 10, 64)
 			if err != nil {
-				http.Error(w, "User ID format not valid", http.StatusBadRequest)
+				http.Error(w, "User ID format not valid", http.StatusForbidden)
 				return
 			}
 			_, err = ch.UserStore.GetByID(userID)
