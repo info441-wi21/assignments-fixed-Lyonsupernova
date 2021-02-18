@@ -190,7 +190,8 @@ func (ch *ContextHandler) SessionsHandler(w http.ResponseWriter, r *http.Request
 			return
 		}
 		userCredential := &users.Credentials{}
-		if err := json.NewDecoder(r.Body).Decode(userCredential); err != nil {
+		jsonResponseBody, _ := ioutil.ReadAll(r.Body)
+		if err := json.Unmarshal(jsonResponseBody, userCredential); err != nil {
 			log.Printf("The request body cannot be encoded")
 			http.Error(w, "Bad request", http.StatusBadRequest)
 			return
@@ -205,6 +206,7 @@ func (ch *ContextHandler) SessionsHandler(w http.ResponseWriter, r *http.Request
 		}
 
 		// authentiicate
+		log.Printf("test: %s", userCredential.Password)
 		if err := user.Authenticate(userCredential.Password); err != nil {
 			log.Printf("The user's credential is not authentiated")
 			http.Error(w, "Credential not authorized", http.StatusUnauthorized)

@@ -266,6 +266,10 @@ func TestSpecificUserHandler(t *testing.T) {
 		if err != nil {
 			t.Errorf("Error beginning sessions, %v", err)
 		}
+		if c.validateSessID == false {
+			c.userid = "115151"
+			sess.User.ID = 123451
+		}
 		req.Header.Set("Content-Type", c.contentType)
 		req.Header.Set("Authorization", sid.String())
 		handler.ServeHTTP(rr, req)
@@ -374,8 +378,8 @@ func TestSessionsHandler(t *testing.T) {
 		handler.ServeHTTP(rr, req)
 		// checks if it returns with a correct status code
 		if status := rr.Code; status != c.expectedResponse {
-			t.Errorf("Instead of status %d, handler response with %d http status",
-				c.expectedResponse, status)
+			t.Errorf("Instead of status %d, handler response with %d http status, test %s",
+				c.expectedResponse, status, c.sampleID)
 		}
 		log.Printf("%s Passed", c.sampleID)
 	}
@@ -437,8 +441,8 @@ func TestSpecificSessionHandler(t *testing.T) {
 		handler.ServeHTTP(rr, req)
 		// checks if it returns with a correct status code
 		if status := rr.Code; status != c.expectedResponse {
-			t.Errorf("Instead of status %d, handler response with %d http status",
-				c.expectedResponse, status)
+			t.Errorf("Instead of status %d, handler response with %d http status, test %s",
+				c.expectedResponse, status, c.sampleID)
 		}
 		log.Printf("%s Passed", c.sampleID)
 	}
