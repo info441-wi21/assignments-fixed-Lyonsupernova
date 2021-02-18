@@ -9,8 +9,12 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
-	"reflect"
 	"testing"
+	"time"
+
+	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/go-redis/redis"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // Test UsersHandler handler
@@ -106,12 +110,20 @@ func TestUsersHandler(t *testing.T) {
 
 // Test SpecificUserHandler
 func TestSpecificUserHandler(t *testing.T) {
-
+	db, _, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	if err != nil {
+		t.Errorf("Erorr connecting to db %v", err)
+	}
+	defer db.Close()
+	_, err = sessions.NewSessionID("somerandomkey")
+	if err != nil {
+		fmt.Printf("Error generating sessionID")
+	}
 	userStore := &users.DummyMySQLStore{}
-	sess := sessions.NewMemStore(100, 10)
+	//ctxSess := sessions.NewMemStore(100, 10)
 	contextHandler := &ContextHandler{
 		SessionID:    "ramdom",
-		SessionStore: sess,
+		SessionStore: sessions.NewRedisStore(redis.NewClient(&redis.Options{Addr: "127.0.0.1:6379"}), time.Hour),
 		UserStore:    userStore,
 	}
 
@@ -141,6 +153,8 @@ func TestSpecificUserHandler(t *testing.T) {
 		method           string
 		contentType      string
 		expectedResponse int
+		update           *users.Updates
+		user             *users.User
 	}{
 		{
 			"SpecificUserHandler1",
@@ -148,13 +162,21 @@ func TestSpecificUserHandler(t *testing.T) {
 			"GET",
 			"",
 			http.StatusNotFound,
+			&users.Updates{},
+			&users.User{
+				ID: 123456,
+			},
 		},
 		{
 			"SpecificUserHandler2",
-			"fmt.Sprint(userID)",
+			"ramdom",
 			"GET",
 			"",
 			http.StatusOK,
+			&users.Updates{},
+			&users.User{
+				ID: 123456,
+			},
 		},
 		{
 			"SpecificUserHandler3",
@@ -162,6 +184,10 @@ func TestSpecificUserHandler(t *testing.T) {
 			"GET",
 			"",
 			http.StatusOK,
+			&users.Updates{},
+			&users.User{
+				ID: 123456,
+			},
 		},
 		{
 			"SpecificUserHandler4",
@@ -169,6 +195,10 @@ func TestSpecificUserHandler(t *testing.T) {
 			"PATCH",
 			"application/json",
 			http.StatusForbidden,
+			&users.Updates{},
+			&users.User{
+				ID: 123456,
+			},
 		},
 		{
 			"SpecificUserHandler5",
@@ -176,6 +206,10 @@ func TestSpecificUserHandler(t *testing.T) {
 			"PATCH",
 			"application/notjson",
 			http.StatusUnsupportedMediaType,
+			&users.Updates{},
+			&users.User{
+				ID: 123456,
+			},
 		},
 		{
 			"SpecificUserHandler6",
@@ -183,6 +217,13 @@ func TestSpecificUserHandler(t *testing.T) {
 			"PATCH",
 			"application/json",
 			http.StatusOK,
+			&users.Updates{
+				FirstName: "new",
+				LastName:  "man",
+			},
+			&users.User{
+				ID: 123456,
+			},
 		},
 		{
 			"SpecificUserHandler7",
@@ -190,48 +231,61 @@ func TestSpecificUserHandler(t *testing.T) {
 			"POST",
 			"application/json",
 			http.StatusMethodNotAllowed,
+			&users.Updates{},
+			&users.User{},
 		},
 	}
 
 	for _, c := range cases {
 		log.Printf("Testing %s ...", c.sampleID)
-		req, _ := http.NewRequest(c.method, "/v1/users/"+c.id, nil)
+		body := []byte("{json:json}")
+		if c.method == "PATCH" {
+			body, err = json.Marshal(c.update)
+			if err != nil {
+				t.Errorf("Error json encoding")
+			}
+		}
+		handler := http.HandlerFunc(contextHandler.SpecificUserHandler)
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(contextHandler.UsersHandler)
+		req, _ := http.NewRequest(c.method, "/v1/users/"+c.id, bytes.NewReader(body))
+		sess := &SessionState{
+			BeginDate: time.Now(),
+			User:      c.user,
+		}
+		sid, err := sessions.BeginSession(contextHandler.SessionID, contextHandler.SessionStore, sess, rr)
+		if err != nil {
+			t.Errorf("Error beginning sessions, %v", err)
+		}
+		req.Header.Set("Authorization", sid.String())
 		handler.ServeHTTP(rr, req)
+		err = contextHandler.SessionStore.Save(sid, sess)
+		if err != nil {
+			t.Errorf("session save went wrong")
+		}
 		// checks if it returns with a correct status code
 		if status := rr.Code; status != c.expectedResponse {
 			t.Errorf("Instead of status %d, handler response with %d http status",
 				c.expectedResponse, status)
-		}
-		// checks if it returns a complete json
-		var values reflect.Value
-		if c.method == "GET" {
-			var user *users.User
-			user = new(users.User)
-			json.Unmarshal(rr.Body.Bytes(), &user)
-			values = reflect.ValueOf(user)
-		} else {
-			var update *users.Updates
-			update = new(users.Updates)
-			json.Unmarshal(rr.Body.Bytes(), &update)
-			values = reflect.ValueOf(update)
-		}
-		for i := 0; i < values.NumField(); i++ {
-			if values.Field(i).Interface() == nil {
-				t.Errorf("Response json does not have %s", fmt.Sprint(values.Field(i)))
-			}
 		}
 		log.Printf("%s Passed", c.sampleID)
 	}
 }
 
 func TestSessionsHandler(t *testing.T) {
+	db, _, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	if err != nil {
+		t.Errorf("Erorr connecting to db %v", err)
+	}
+	defer db.Close()
+	_, err = sessions.NewSessionID("somerandomkey")
+	if err != nil {
+		fmt.Printf("Error generating sessionID")
+	}
 	userStore := &users.DummyMySQLStore{}
-	sess := sessions.NewMemStore(100, 10)
+	//ctxSess := sessions.NewMemStore(100, 10)
 	contextHandler := &ContextHandler{
 		SessionID:    "ramdom",
-		SessionStore: sess,
+		SessionStore: sessions.NewRedisStore(redis.NewClient(&redis.Options{Addr: "127.0.0.1:6379"}), time.Hour),
 		UserStore:    userStore,
 	}
 
@@ -260,20 +314,26 @@ func TestSessionsHandler(t *testing.T) {
 		contentType      string
 		expectedResponse int
 		credentails      *users.Credentials
+		user             *users.User
+		hasCred          int
 	}{
 		{
 			"SessionsHandler1",
 			"GET",
 			"",
 			http.StatusMethodNotAllowed,
-			nil,
+			&users.Credentials{},
+			&users.User{},
+			0,
 		},
 		{
 			"SessionsHandler2",
 			"POST",
 			"application/x-www-form-urlencoded",
 			http.StatusUnsupportedMediaType,
-			nil,
+			&users.Credentials{},
+			&users.User{},
+			0,
 		},
 		{
 			"SessionsHandler3",
@@ -281,23 +341,25 @@ func TestSessionsHandler(t *testing.T) {
 			"application/json",
 			http.StatusCreated,
 			credential,
+			user,
+			1,
 		},
 	}
 
 	for _, c := range cases {
 		log.Printf("Testing %s ...", c.sampleID)
-		var req *http.Request
-		if c.credentails != nil {
-			reqBody := new(bytes.Buffer)
-			bufEncode := json.NewEncoder(reqBody)
-			bufEncode.Encode(c.credentails)
-			//reqBody, _ := json.Marshal(c.credentails)
-			req, _ = http.NewRequest(c.method, "/v1/sessions", bytes.NewReader(reqBody.Bytes()))
-		} else {
-			req, _ = http.NewRequest(c.method, "/v1/sessions", nil)
+
+		handler := http.HandlerFunc(contextHandler.SessionsHandler)
+		body := []byte("{json:json}")
+		if c.credentails.Email != "" && c.credentails.Password != "" {
+			body, _ = json.Marshal(c.credentails)
 		}
+		req, _ := http.NewRequest(c.method, "/v1/sessions", bytes.NewReader(body))
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(contextHandler.UsersHandler)
+		req.Header.Set("Content-Type", c.contentType)
+		if c.hasCred == 1 {
+			c.user.PassHash, _ = bcrypt.GenerateFromPassword(c.user.PassHash, 13)
+		}
 		handler.ServeHTTP(rr, req)
 		// checks if it returns with a correct status code
 		if status := rr.Code; status != c.expectedResponse {
@@ -360,7 +422,7 @@ func TestSpecificSessionHandler(t *testing.T) {
 		log.Printf("Testing %s ...", c.sampleID)
 		req, _ := http.NewRequest(c.method, "/v1/sessions/"+c.lastURL, nil)
 		rr := httptest.NewRecorder()
-		handler := http.HandlerFunc(contextHandler.UsersHandler)
+		handler := http.HandlerFunc(contextHandler.SpecificSessionHandler)
 		handler.ServeHTTP(rr, req)
 		// checks if it returns with a correct status code
 		if status := rr.Code; status != c.expectedResponse {
