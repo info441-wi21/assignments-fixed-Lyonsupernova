@@ -1,3 +1,6 @@
+docker network rm info441
+docker network create info441
+
 docker rm -f redis
 docker run -d --name redis --network info441 redis
 
@@ -38,7 +41,7 @@ docker run -d \
 -e SESSIONKEY=$SESSIONKEY \
 -e DSN=$DSN \
 -e REDISADDR=$REDISADDR \
---network info441
+--network info441 \
 lyons124/gateway:latest
 
 exit
