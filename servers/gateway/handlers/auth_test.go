@@ -110,11 +110,13 @@ func TestUsersHandler(t *testing.T) {
 
 // Test SpecificUserHandler
 func TestSpecificUserHandler(t *testing.T) {
+
 	db, _, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	if err != nil {
 		t.Errorf("Erorr connecting to db %v", err)
 	}
 	defer db.Close()
+
 	_, err = sessions.NewSessionID("somerandomkey")
 	if err != nil {
 		fmt.Printf("Error generating sessionID")
@@ -153,15 +155,17 @@ func TestSpecificUserHandler(t *testing.T) {
 		method           string
 		contentType      string
 		expectedResponse int
+		validateSessID   bool
 		update           *users.Updates
 		user             *users.User
 	}{
 		{
 			"SpecificUserHandler1",
-			"iaminvalidID",
+			"notme",
 			"GET",
 			"",
 			http.StatusNotFound,
+			true,
 			&users.Updates{},
 			&users.User{
 				ID: 123456,
@@ -169,10 +173,11 @@ func TestSpecificUserHandler(t *testing.T) {
 		},
 		{
 			"SpecificUserHandler2",
-			"ramdom",
+			"51231516",
 			"GET",
 			"",
 			http.StatusOK,
+			true,
 			&users.Updates{},
 			&users.User{
 				ID: 123456,
@@ -184,6 +189,7 @@ func TestSpecificUserHandler(t *testing.T) {
 			"GET",
 			"",
 			http.StatusOK,
+			true,
 			&users.Updates{},
 			&users.User{
 				ID: 123456,
@@ -191,10 +197,11 @@ func TestSpecificUserHandler(t *testing.T) {
 		},
 		{
 			"SpecificUserHandler4",
-			"notme",
+			"1231709",
 			"PATCH",
 			"application/json",
 			http.StatusForbidden,
+			false,
 			&users.Updates{},
 			&users.User{
 				ID: 123456,
@@ -206,6 +213,7 @@ func TestSpecificUserHandler(t *testing.T) {
 			"PATCH",
 			"application/notjson",
 			http.StatusUnsupportedMediaType,
+			true,
 			&users.Updates{},
 			&users.User{
 				ID: 123456,
@@ -217,6 +225,7 @@ func TestSpecificUserHandler(t *testing.T) {
 			"PATCH",
 			"application/json",
 			http.StatusOK,
+			true,
 			&users.Updates{
 				FirstName: "new",
 				LastName:  "man",
@@ -231,6 +240,7 @@ func TestSpecificUserHandler(t *testing.T) {
 			"POST",
 			"application/json",
 			http.StatusMethodNotAllowed,
+			true,
 			&users.Updates{},
 			&users.User{},
 		},
@@ -256,7 +266,11 @@ func TestSpecificUserHandler(t *testing.T) {
 		if err != nil {
 			t.Errorf("Error beginning sessions, %v", err)
 		}
-		req.Header.Set("Authorization", sid.String())
+		if c.validateSessID == false {
+			req.Header.Set("Authorization", "invalidID")
+		} else {
+			req.Header.Set("Authorization", sid.String())
+		}
 		handler.ServeHTTP(rr, req)
 		err = contextHandler.SessionStore.Save(sid, sess)
 		if err != nil {
@@ -264,8 +278,8 @@ func TestSpecificUserHandler(t *testing.T) {
 		}
 		// checks if it returns with a correct status code
 		if status := rr.Code; status != c.expectedResponse {
-			t.Errorf("Instead of status %d, handler response with %d http status",
-				c.expectedResponse, status)
+			t.Errorf("Instead of status %d, handler response with %d http status, test %s",
+				c.expectedResponse, status, c.sampleID)
 		}
 		log.Printf("%s Passed", c.sampleID)
 	}
@@ -341,7 +355,7 @@ func TestSessionsHandler(t *testing.T) {
 			"application/json",
 			http.StatusCreated,
 			credential,
-			user,
+			&users.User{},
 			1,
 		},
 	}

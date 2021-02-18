@@ -79,19 +79,26 @@ func (ch *ContextHandler) UsersHandler(w http.ResponseWriter, r *http.Request) {
 // SpecificUserHandler authenticate the user and get the seesion state
 func (ch *ContextHandler) SpecificUserHandler(w http.ResponseWriter, r *http.Request) {
 	// authenticate the user and get the session state
-	_, err := sessions.GetSessionID(r, ch.SessionID)
+	auth := r.Header.Get("Authorization")
+	sessionID := sessions.SessionID(strings.TrimPrefix(auth, "Bearer "))
+	sessionState := &SessionState{}
+	err := ch.SessionStore.Get(sessionID, sessionState)
+	//_, err = sessions.GetSessionID(r, sessionID.String())
 	if err != nil {
+		log.Printf("sessionid errors")
 		http.Error(w, "current sessionID is not valid", http.StatusUnauthorized)
 		return
 	}
 
-	sessionState := &SessionState{}
-	_, err = sessions.GetState(r, ch.SessionID, ch.SessionStore, sessionState)
+	/*
+		sessionState := &SessionState{}
+		_, err = sessions.GetState(r, ch.SessionID, ch.SessionStore, sessionState)
 
-	if err != nil {
-		http.Error(w, "current session state is not valid", http.StatusUnauthorized)
-		return
-	}
+		if err != nil {
+			http.Error(w, "current session state is not valid", http.StatusUnauthorized)
+			return
+		}
+	*/
 
 	base := filepath.Base(r.URL.Path)
 	if r.Method == http.MethodGet {
@@ -103,11 +110,13 @@ func (ch *ContextHandler) SpecificUserHandler(w http.ResponseWriter, r *http.Req
 		} else {
 			userID, err2 := strconv.ParseInt(base, 10, 64)
 			if err2 != nil {
+				log.Printf("error is %v", err2)
 				http.Error(w, "User ID format not valid", http.StatusNotFound)
 			}
 			usr, err = ch.UserStore.GetByID(userID)
 		}
 		if err != nil {
+			log.Printf("error is 2 %v", err)
 			http.Error(w, "User ID not found in session store", http.StatusNotFound)
 			return
 		}
