@@ -1,7 +1,10 @@
 package users
 
 import (
+	"errors"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 // DummyMySQLStore strcut
@@ -15,12 +18,29 @@ func NewDummySQL() *DummyMySQLStore {
 
 // GetByEmail method
 func (du *DummyMySQLStore) GetByEmail(email string) (*User, error) {
+	if email == "notvalid@gmail.com" {
+		return nil, errors.New("Did not find user")
+	}
+	if email == "thridEmail@gmail.com" {
+		passHash, _ := bcrypt.GenerateFromPassword([]byte("thridUserPassword"), bcryptCost)
+		return &User{
+			ID:        123456,
+			Email:     "thridEmail@gmail.com",
+			PassHash:  passHash,
+			UserName:  "userThree",
+			FirstName: "super",
+			LastName:  "man",
+			PhotoURL:  "someURL",
+		}, nil
+	}
 	return nil, nil
 }
 
 // GetByID method 有问题
 func (du *DummyMySQLStore) GetByID(id int64) (*User, error) {
-
+	if id == 456789 {
+		return nil, errors.New("UserID not found")
+	}
 	return nil, nil
 }
 

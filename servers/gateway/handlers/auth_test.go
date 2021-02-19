@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/go-redis/redis"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -103,24 +102,19 @@ func TestUsersHandler(t *testing.T) {
 		json.Unmarshal(rr.Body.Bytes(), &user)
 		if user.PassHash != nil || user.Email != "" {
 			t.Errorf("Response with unnecessary PassHash or Email")
+		} else {
+			log.Printf("%s Passed", c.sampleID)
 		}
-		log.Printf("%s Passed", c.sampleID)
 	}
 }
 
 // Test SpecificUserHandler
 func TestSpecificUserHandler(t *testing.T) {
-
-	db, _, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
-	if err != nil {
-		t.Errorf("Erorr connecting to db %v", err)
-	}
-	defer db.Close()
-
-	_, err = sessions.NewSessionID("somerandomkey")
+	_, err := sessions.NewSessionID("ramdom")
 	if err != nil {
 		fmt.Printf("Error generating sessionID")
 	}
+	//userStore, _ := users.NewMySQLStore("127.0.0.1:6379")
 	userStore := &users.DummyMySQLStore{}
 	//ctxSess := sessions.NewMemStore(100, 10)
 	contextHandler := &ContextHandler{
@@ -128,25 +122,6 @@ func TestSpecificUserHandler(t *testing.T) {
 		SessionStore: sessions.NewRedisStore(redis.NewClient(&redis.Options{Addr: "127.0.0.1:6379"}), time.Hour),
 		UserStore:    userStore,
 	}
-
-	/*
-		// Create a dummy user to test for
-		user := &users.NewUser{
-			Email:        "secondEmail@gmail.com",
-			Password:     "123535",
-			PasswordConf: "123535",
-			UserName:     "usertwo",
-			FirstName:    "bat",
-			LastName:     "man",
-		}
-		rr := httptest.NewRecorder()
-		registerUser(user, contextHandler, rr)
-		// Retrieve user id from the response for further testings
-		var response *users.User
-		response = new(users.User)
-		json.Unmarshal(rr.Body.Bytes(), &user)
-		userID := response.ID
-	*/
 
 	// start testing cases
 	cases := []struct {
@@ -197,7 +172,7 @@ func TestSpecificUserHandler(t *testing.T) {
 		},
 		{
 			"SpecificUserHandler4",
-			"1231709",
+			"notaNumber",
 			"PATCH",
 			"application/json",
 			http.StatusForbidden,
@@ -244,6 +219,18 @@ func TestSpecificUserHandler(t *testing.T) {
 			&users.Updates{},
 			&users.User{},
 		},
+		{
+			"SpecificUserHandler8",
+			"456789",
+			"PATCH",
+			"application/json",
+			http.StatusForbidden,
+			true,
+			&users.Updates{},
+			&users.User{
+				ID: 123456,
+			},
+		},
 	}
 
 	for _, c := range cases {
@@ -266,14 +253,12 @@ func TestSpecificUserHandler(t *testing.T) {
 		if err != nil {
 			t.Errorf("Error beginning sessions, %v", err)
 		}
-		if c.validateSessID == false {
-			c.userid = "115151"
-			sess.User.ID = 123451
-		}
 		req.Header.Set("Content-Type", c.contentType)
 		req.Header.Set("Authorization", sid.String())
 		handler.ServeHTTP(rr, req)
-		err = contextHandler.SessionStore.Save(sid, sess)
+		if c.method != "GET" {
+			err = contextHandler.SessionStore.Save(sid, sess)
+		}
 		if err != nil {
 			t.Errorf("session save went wrong")
 		}
@@ -281,18 +266,14 @@ func TestSpecificUserHandler(t *testing.T) {
 		if status := rr.Code; status != c.expectedResponse {
 			t.Errorf("Instead of status %d, handler response with %d http status, test %s",
 				c.expectedResponse, status, c.sampleID)
+		} else {
+			log.Printf("%s Passed", c.sampleID)
 		}
-		log.Printf("%s Passed", c.sampleID)
 	}
 }
 
 func TestSessionsHandler(t *testing.T) {
-	db, _, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
-	if err != nil {
-		t.Errorf("Erorr connecting to db %v", err)
-	}
-	defer db.Close()
-	_, err = sessions.NewSessionID("somerandomkey")
+	_, err := sessions.NewSessionID("ramdom")
 	if err != nil {
 		fmt.Printf("Error generating sessionID")
 	}
@@ -307,16 +288,11 @@ func TestSessionsHandler(t *testing.T) {
 	// Create a dummy user to test for
 	user := &users.NewUser{
 		Email:        "thridEmail@gmail.com",
-		Password:     "513451",
-		PasswordConf: "513451",
+		Password:     "thridUserPassword",
+		PasswordConf: "thridUserPassword",
 		UserName:     "userThree",
 		FirstName:    "super",
 		LastName:     "man",
-	}
-
-	credential := &users.Credentials{
-		Email:    "thridEmail@gmail.com",
-		Password: "513451",
 	}
 
 	rr := httptest.NewRecorder()
@@ -354,8 +330,35 @@ func TestSessionsHandler(t *testing.T) {
 			"SessionsHandler3",
 			"POST",
 			"application/json",
+			http.StatusUnauthorized,
+			&users.Credentials{
+				Email:    "notvalid@gmail.com",
+				Password: "123",
+			},
+			&users.User{},
+			1,
+		},
+		{
+			"SessionsHandler4",
+			"POST",
+			"application/json",
 			http.StatusCreated,
-			credential,
+			&users.Credentials{
+				Email:    "thridEmail@gmail.com",
+				Password: "thridUserPassword",
+			},
+			&users.User{},
+			1,
+		},
+		{
+			"SessionsHandler5",
+			"POST",
+			"application/json",
+			http.StatusUnauthorized,
+			&users.Credentials{
+				Email:    "thridEmail@gmail.com",
+				Password: "incorrect",
+			},
 			&users.User{},
 			1,
 		},
@@ -380,8 +383,9 @@ func TestSessionsHandler(t *testing.T) {
 		if status := rr.Code; status != c.expectedResponse {
 			t.Errorf("Instead of status %d, handler response with %d http status, test %s",
 				c.expectedResponse, status, c.sampleID)
+		} else {
+			log.Printf("%s Passed", c.sampleID)
 		}
-		log.Printf("%s Passed", c.sampleID)
 	}
 }
 

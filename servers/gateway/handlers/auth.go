@@ -134,6 +134,7 @@ func (ch *ContextHandler) SpecificUserHandler(w http.ResponseWriter, r *http.Req
 	} else if r.Method == http.MethodPatch {
 		if base != "me" {
 			userID, err := strconv.ParseInt(base, 10, 64)
+			//log.Printf("%v", userID)
 			if err != nil {
 				http.Error(w, "User ID format not valid", http.StatusForbidden)
 				return
@@ -206,7 +207,7 @@ func (ch *ContextHandler) SessionsHandler(w http.ResponseWriter, r *http.Request
 		}
 
 		// authentiicate
-		log.Printf("test: %s", userCredential.Password)
+		//log.Printf("test: %s", userCredential.Password)
 		if err := user.Authenticate(userCredential.Password); err != nil {
 			log.Printf("The user's credential is not authentiated")
 			http.Error(w, "Credential not authorized", http.StatusUnauthorized)
