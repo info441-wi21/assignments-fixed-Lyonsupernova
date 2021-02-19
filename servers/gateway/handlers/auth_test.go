@@ -16,6 +16,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+/*
+Before running this test, please run a redis container with port 6379
+locally
+*/
+
 // Test UsersHandler handler
 func TestUsersHandler(t *testing.T) {
 
@@ -431,7 +436,7 @@ func TestSpecificSessionHandler(t *testing.T) {
 		},
 		{
 			"SpecificSessionHandler3",
-			"DELET",
+			"DELETE",
 			"mine",
 			http.StatusOK,
 		},
@@ -447,8 +452,9 @@ func TestSpecificSessionHandler(t *testing.T) {
 		if status := rr.Code; status != c.expectedResponse {
 			t.Errorf("Instead of status %d, handler response with %d http status, test %s",
 				c.expectedResponse, status, c.sampleID)
+		} else {
+			log.Printf("%s Passed", c.sampleID)
 		}
-		log.Printf("%s Passed", c.sampleID)
 	}
 }
 
