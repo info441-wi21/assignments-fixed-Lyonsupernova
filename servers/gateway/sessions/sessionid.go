@@ -1,7 +1,10 @@
 package sessions
 
 import (
+	"crypto/hmac"
+	"crypto/rand"
 	"crypto/sha256"
+	"encoding/base64"
 	"errors"
 )
 
@@ -33,33 +36,52 @@ var ErrInvalidID = errors.New("Invalid Session ID")
 //using `signingKey` as the HMAC signing key. An error is returned only
 //if there was an error generating random bytes for the session ID
 func NewSessionID(signingKey string) (SessionID, error) {
-	//TODO: if `signingKey` is zero-length, return InvalidSessionID
-	//and an error indicating that it may not be empty
+	// if `signingKey` is zero-length, return InvalidSessionID
+	// and an error indicating that it may not be empty
+	if len(signingKey) == 0 {
+		return InvalidSessionID, errors.New("Signing key may not be empty")
+	}
 
-	//TODO: Generate a new digitally-signed SessionID by doing the following:
-	//- create a byte slice where the first `idLength` of bytes
-	//  are cryptographically random bytes for the new session ID,
-	//  and the remaining bytes are an HMAC hash of those ID bytes,
-	//  using the provided `signingKey` as the HMAC key.
-	//- encode that byte slice using base64 URL Encoding and return
-	//  the result as a SessionID type
+	// Generate a new digitally-signed SessionID that follows the spec of SessionID
+	randomBytes := make([]byte, idLength)
+	_, err := rand.Read(randomBytes)
+	if err != nil {
+		return InvalidSessionID, err
+	}
 
-	//the following return statement is just a placeholder
-	//remove it when implementing the function
-	return InvalidSessionID, nil
+	remaining := hmac.New(sha256.New, []byte(signingKey))
+	remaining.Write(randomBytes)
+	remainingBytes := remaining.Sum(nil)
+
+	// https://stackoverflow.com/questions/16248241/concatenate-two-slices-in-go
+	finalByteSlice := append(randomBytes, remainingBytes...)
+
+	// Encode the byteslice to Base64 URL Encoded string
+	finalSessionID := SessionID(base64.URLEncoding.EncodeToString(finalByteSlice))
+	return finalSessionID, nil
 }
 
 //ValidateID validates the string in the `id` parameter
 //using the `signingKey` as the HMAC signing key
 //and returns an error if invalid, or a SessionID if valid
 func ValidateID(id string, signingKey string) (SessionID, error) {
+	decodedID, err := base64.URLEncoding.DecodeString(id)
+	if err != nil {
+		return InvalidSessionID, err
+	}
 
-	//TODO: validate the `id` parameter using the provided `signingKey`.
-	//base64 decode the `id` parameter, HMAC hash the
-	//ID portion of the byte slice, and compare that to the
-	//HMAC hash stored in the remaining bytes. If they match,
-	//return the entire `id` parameter as a SessionID type.
-	//If not, return InvalidSessionID and ErrInvalidID.
+	idPortion := decodedID[0:idLength]
+	compare := decodedID[idLength:]
+	remaining := hmac.New(sha256.New, []byte(signingKey))
+	_, writeErr := remaining.Write(idPortion)
+	if writeErr != nil {
+		return InvalidSessionID, writeErr
+	}
+	remainingBytes := remaining.Sum(nil)
+
+	if hmac.Equal(compare, remainingBytes) {
+		return SessionID(id), nil
+	}
 
 	return InvalidSessionID, ErrInvalidID
 }
