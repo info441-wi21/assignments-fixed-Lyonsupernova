@@ -322,19 +322,19 @@ func TestFetchHTML(t *testing.T) {
 		{
 			"Valid URL",
 			"This is a valid HTML page, so this should work",
-			"https://info344-a17.github.io/tests/ogall.html",
+			"https://info441-wi21.github.io/tests/ogall.html",
 			false,
 		},
 		{
 			"Not Found URL",
 			"Remember to check the response status code",
-			"https://info344-a17.github.io/tests/not-found.html",
+			"https://info441-wi21.github.io/tests/not-found.html",
 			true,
 		},
 		{
 			"Non-HTML URL",
 			"Remember to check the response content-type to ensure it's an HTML page",
-			"https://info344-a17.github.io/tests/test.png",
+			"https://info441-wi21.github.io/tests/test.png",
 			true,
 		},
 	}

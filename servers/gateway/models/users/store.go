@@ -2,6 +2,7 @@ package users
 
 import (
 	"errors"
+	"time"
 )
 
 //ErrUserNotFound is returned when the user can't be found
@@ -28,4 +29,7 @@ type Store interface {
 
 	//Delete deletes the user with the given ID
 	Delete(id int64) error
+
+	//LogSignIn logs user sign in information
+	LogSignIn(user *User, dateTime time.Time, clientIP string) error
 }
