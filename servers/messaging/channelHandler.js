@@ -68,24 +68,23 @@ channelPostHandler = async(req, res, {Channel}) => {
         res.status.send(500).send("There was an issue getting the channels")
         return;
     }
-    users = {"id":userID, "username": userName};
-    createdAt = new Date();
-    creator = users
+    const users = [{"id":userID, "username": userName}];
+    const createdAt = new Date();
+
     //TODO:edited at ? Creator? not found
     const channel = {
-        name,
-        description,
-        private,
-        users,
-        createdAt,
-        users,
-        createdAt
+        "name": name,
+        "description": description,
+        "private": private,
+        "members": users,
+        "createdAt": createdAt,
+        "creator": users[0]
     };
     // status code send with json created object
     const query = new Channel(channel);
     query.save((err, newChannel) => {
         if (err) {
-            res.status(400).send('unable to create a new channel');
+            res.status(400).send('unable to create a new channel' + err);
             return;
         }
         res.status(201).json(newChannel);
