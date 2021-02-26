@@ -42,6 +42,8 @@ channelPostHandler = async(req, res, {Channel}) => {
         res.status(401).send("no id found");
         return;
     }
+    //TODO: since the description is optional, what if the lack of description will lead to it will store value of private
+    //TODO: do we need to pass in memebr id or member name in request body
     const{name, description, private} = req.body;
     if (!name) {
         res.status(400).send("no username found");
@@ -67,26 +69,18 @@ channelPostHandler = async(req, res, {Channel}) => {
         return;
     }
     users = {"id":userID, "username": userName};
-    //TODO: how to deal with the unique channel?
-    existedChannel = await Channel.find({"name" : name});
-    res.send(existedChannel)
-    if (existedChannel) {
-        res.status.send(500).send("There was a channel named " + name);
-        return;
-    }
-    //TODO: creator & members...
     createdAt = new Date();
     creator = users
-    //TODO: the json file order??? how does this exactly work?
+    //TODO:edited at ? Creator? not found
     const channel = {
         name,
         description,
         private,
         users,
         createdAt,
-        users
+        users,
+        createdAt
     };
-    res.send(users)
     // status code send with json created object
     const query = new Channel(channel);
     query.save((err, newChannel) => {
