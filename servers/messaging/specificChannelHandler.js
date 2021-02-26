@@ -183,4 +183,4 @@ specificChannelDeleteHandler = async function(req, res, {Channel, Message}) {
 };
 
 
-Module.exports = {specificChannelGetHandler, specificChannelPostHandler, specificChannelPatchHandler, specificChannelDeleteHandler};
+module.exports = {specificChannelGetHandler, specificChannelPostHandler, specificChannelPatchHandler, specificChannelDeleteHandler};

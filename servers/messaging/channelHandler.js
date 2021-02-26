@@ -94,4 +94,4 @@ channelPostHandler = async(req, res, {Channel}) => {
     });
 };
 
-Module.exports = {channelGetHandler, channelPostHandler};
+module.exports = {channelGetHandler, channelPostHandler};
