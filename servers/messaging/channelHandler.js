@@ -11,11 +11,11 @@ var sqlConnection = mysql.createConnection ({
 });
 
 channelGetHandler = async(req, res, {Channel}) => {
-    if (!('X-User' in req.header)) {
+    if (!req.get('x-user')) {
         res.status(401).send("unauthorized user");
         return;
     }
-    const {userID} = JSON.parse(req.headers['x-user']);
+    const userID = JSON.parse(req.headers['x-user']);
     if (!userID) {
         res.status(401).send("no id found");
         return;
@@ -32,13 +32,12 @@ channelGetHandler = async(req, res, {Channel}) => {
 
 
 channelPostHandler = async(req, res, {Channel}) => {
-    if (!('X-User' in req.header)) {
+    if (!req.get('x-user')) {
         res.status(401).send("unauthorized user");
+        return;
     }
     // parse x-user to get user id
-
-    
-    const {userID} = JSON.parse(req.headers['x-user']);
+    const userID = JSON.parse(req.headers['x-user']);
     if (!userID) {
         res.status(401).send("no id found");
         return;
@@ -73,16 +72,15 @@ channelPostHandler = async(req, res, {Channel}) => {
     createdAt = new Date();
     creator = users
     const channel = {
-        "name": name,
-        "description": description,
-        "private": private,
-        "members": users,
-        "createdAt": createdAt,
-        "creator": users
+        name,
+        description,
+        private,
+        users,
+        createdAt,
+        users
     };
     // status code send with json created object
     const query = new Channel(channel);
-    //TODO: is here we stored in the DB?
     query.save((err, newChannel) => {
         if (err) {
             res.status(400).send('unable to create a new channel');
