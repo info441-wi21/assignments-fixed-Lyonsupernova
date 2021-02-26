@@ -3,9 +3,11 @@ const express = require('express')
 const {channelSchema, messageSchema} = require('./schemas')
 const Channel = mongoose.model("Channel", channelSchema)
 const Message = mongoose.model("Message", messageSchema)
-const port = process.env.PORT;
-const mongoPort = process.env.MONGOPORT;
-const mongoEndPoint = "mongodb://" + mongoPort;
+// const port = process.env.PORT;
+// const mongoPort = process.env.MONGOPORT;
+// const mongoEndPoint = "mongodb://" + mongoPort;
+const mongoEndPoint = "mongodb://localhost:27017/test";
+const port = 4000;
 const app = express();
 app.use(express.json());
 

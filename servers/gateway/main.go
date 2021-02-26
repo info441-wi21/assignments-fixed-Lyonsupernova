@@ -4,6 +4,7 @@ import (
 	"assignments-fixed-Lyonsupernova/servers/gateway/handlers"
 	"assignments-fixed-Lyonsupernova/servers/gateway/models/users"
 	"assignments-fixed-Lyonsupernova/servers/gateway/sessions"
+	"assignments-fixed-Lyonsupernova/servers/summary"
 	"log"
 	"net/http"
 	"os"
@@ -33,6 +34,9 @@ func main() {
 	}
 	sessionID := os.Getenv("SESSIONKEY")
 	redisAddr := os.Getenv("REDISADDR")
+	messageAddr := os.Getenv("MESSAGESADDR")
+	summaryAddr := os.Getenv("SUMMARYADDR")
+
 	DSN := os.Getenv("DSN")
 	if len(redisAddr) == 0 {
 		redisAddr = "127.0.0.1:6379"
@@ -57,7 +61,7 @@ func main() {
 	TLSCERT := os.Getenv("TLSCERT")
 	mux := http.NewServeMux()
 	log.Printf("server is listening at %s...", addr)
-	mux.HandleFunc("/v1/summary/", handlers.SummaryHandler)
+	mux.HandleFunc("/v1/summary/", summary.SummaryHandler)
 	mux.HandleFunc("/v1/users", contextHandler.UsersHandler)
 	mux.HandleFunc("/v1/users/", contextHandler.SpecificUserHandler)
 	mux.HandleFunc("/v1/sessions", contextHandler.SessionsHandler)

@@ -53,12 +53,16 @@ channelPostHandler = async(req, res, {Channel}) => {
     // get user profile from MySQL db
     try {
         userName = "";
+        // userid => username
         var qry = "SELECT username FROM user WHERE id = " + mysql.escape(userID);
         sqlConnection.query(qry, function (err, result) {
             if (err) {
               console.log('error retrieving new member info:', err.message);
               return;
             }
+            // result?
+            // result == username?
+            console.log(result)
             userName = result[0]
         });
     } catch (e) {

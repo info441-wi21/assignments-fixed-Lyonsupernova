@@ -1,23 +1,23 @@
 const Schema = require('mongoose').Schema;
-
+var ObjectId = Schema.ObjectId;
 const channelSchema = new Schema({
-    id: {type: Schema.Type.ObjectId, required = true, unique: true, auto: true},
+    id: {type: ObjectId, required: true, unique: true, auto: true},
     name: {type: String, unique: true},
     description: {type: String},
     private: {type: Boolean},
-    members: {type: [{id: Schema.Type.ObjectId, username:String}]},
-    createdAt: {type: DateTime},
-    creator: {type: {id: Schema.Type.ObjectId, username: String}},
-    editedAt: {type: DateTime}
+    members: {type: [{id: ObjectId, username:String}]},
+    createdAt: {type: Date},
+    creator: {type: {id: ObjectId, username: String}},
+    editedAt: {type: Date}
 });
 
 const messageSchema = new Schema({
-    id: {type: Schema.Type.ObjectId, required = true, unique: true, auto: true},
-    channelID: {type: Schema.Type.ObjectId, unique: true},
+    id: {type: ObjectId, required: true, unique: true, auto: true},
+    channelID: {type: ObjectId, unique: true},
     body: {type: String},
-    createdAt: {type: DateTime},
-    creator: {type: {id: Schema.Type.ObjectId, username: String}},
-    editedAt: {type: DateTime}
+    createdAt: {type: Date},
+    creator: {type: {id: ObjectId, username: String}},
+    editedAt: {type: Date}
 });
 
 module.exports = {channelSchema, messageSchema};
