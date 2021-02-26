@@ -1,3 +1,15 @@
+// MySQL connection
+const mysql = require('mysql')
+
+var sqlConnection = mysql.createConnection ({
+  host: 'localhost',
+  user: 'root',
+  password: '123456',
+  port: '3306',
+  database: 'mysqldatabase',
+  insecureAuth: true
+});
+
 channelGetHandler = async(req, res, {Channel}) => {
     if (!('X-User' in req.header)) {
         res.status(401).send("unauthorized user");
@@ -41,12 +53,14 @@ channelPostHandler = async(req, res, {Channel}) => {
     // get user profile from MySQL db
     try {
         userName = "";
-        var userNameFromDB = await querySQL("SELECT username FROM user WHERE id = " + mysql.escape(userID));
-        if (userNameFromDB) {
-            userName = userNameFromDB[0].userName;
-        } else {
-            res.status(500).send("username not found");
-        }
+        var qry = "SELECT username FROM user WHERE id = " + mysql.escape(userID);
+        sqlConnection.query(qry, function (err, result) {
+            if (err) {
+              console.log('error retrieving new member info:', err.message);
+              return;
+            }
+            userName = result[0]
+        });
     } catch (e) {
         res.status.send(500).send("There was an issue getting the channels")
         return;
