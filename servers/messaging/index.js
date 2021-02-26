@@ -6,6 +6,9 @@ const Message = mongoose.model("Message", messageSchema)
 // const port = process.env.PORT;
 // const mongoPort = process.env.MONGOPORT;
 // const mongoEndPoint = "mongodb://" + mongoPort;
+
+// lsof -i tcp:4000
+// kill -9 pid
 const mongoEndPoint = "mongodb://localhost:27017/test";
 const port = 4000;
 const app = express();
