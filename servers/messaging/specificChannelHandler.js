@@ -1,9 +1,9 @@
 specificChannelGetHandler = async function(req, res, {Channel, Message}) {
-    if (!('X-User' in req.header)) {
+    if (!req.get('x-user')) {
         res.status(401).send("unauthorized user");
+        return;
     }
-    // parse x-user to get user id
-    const {userID} = JSON.parse(req.headers['x-user']);
+    const userID = JSON.parse(req.headers['x-user']);
     if (!userID) {
         res.status(401).send("no id found");
         return;
