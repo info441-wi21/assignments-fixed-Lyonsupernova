@@ -23,10 +23,10 @@ channelGetHandler = async(req, res, {Channel}) => {
     try {
         res.setHeader("Content-Type", "application/json");
         //TODO: what await find() will return, a list of obj?
-        channels = await Channel.find();
+        channels = await Channel.find({$or: [{"private": true, "members.id": userID}, {"private": false}]});
         res.json(channels);
     } catch (e) {
-        res.status(500).send("channels not found");
+        res.status(500).send("channels not found" + users[id] + users[username]);
     }
 };
 
