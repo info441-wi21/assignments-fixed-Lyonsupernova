@@ -180,20 +180,24 @@ specificChannelDeleteHandler = async function(req, res, {Channel, Message}) {
     // If the current user isn't the creator of this channel,
     // respond with the status code 403 (Forbidden).
     if (channel['creator'].id != userID) {
-       res.status(403).send("creator not found");
+       res.status(403).send("the user is not the creator of the channel");
        return; 
     } 
     // delete the channel and all messages related to it. 
     // Respond with a plain text message indicating that the delete was successful.
-    try {
-        const condition = {'channelID' : channelID};
-        Channel.findOneAndDelete(condition);
-        Message.deleteMany(condition)
-    } catch(e) {
-        res.status(500).send("Something wrong with deleting the channel");
-        return;
-    }
-    res.status(200).send("Deleted message sucessfully");
+    Message.deleteMany({'channelID' : channelID}, function(err, data) {
+        if (err) {
+            res.status(400).send("message: " + data + " delete error: " + err);
+            return;
+        }
+    });
+    Channel.findOneAndDelete({'id' : channelID}, function(err, data) {
+        if (err) {
+            res.status(400).send("channel not find");
+            return;
+        }
+        res.status(200).send("Deleted channel sucessfully: " + data);
+    });  
 };
 
 
