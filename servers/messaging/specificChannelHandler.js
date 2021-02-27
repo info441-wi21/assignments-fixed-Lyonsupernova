@@ -1,3 +1,16 @@
+// MySQL connection
+const mysql = require('mysql')
+const mongoose = require('mongoose')
+mongoose.set('useFindAndModify', false);
+var sqlConnection = mysql.createConnection ({
+  host: 'localhost',
+  user: 'root',
+  password: '123456',
+  port: '3306',
+  database: 'mysqldatabase',
+  insecureAuth: true
+});
+
 specificChannelGetHandler = async function(req, res, {Channel, Message}) {
     if (!req.get('x-user')) {
         res.status(401).send("unauthorized user");
@@ -8,10 +21,10 @@ specificChannelGetHandler = async function(req, res, {Channel, Message}) {
         res.status(401).send("no id found");
         return;
     }
-    const {channelID} = req.params.channelID;
+    const channelID = req.params.channelID;
     const channel = await Channel.findOne({"id" : channelID});
     if (!channel) {
-        res.status(401).send("Channel not exist");
+        res.status(400).send("Channel not exist channelID");
         return;
     }
     // If this is a private channel and the current user is not a member, respond with a 
@@ -39,19 +52,19 @@ specificChannelGetHandler = async function(req, res, {Channel, Message}) {
 
 
 specificChannelPostHandler = async function(req, res, {Channel, Message}) {
-    if (!('X-User' in req.header)) {
+    if (!req.get('x-user')) {
         res.status(401).send("unauthorized user");
+        return;
     }
-    // parse x-user to get user id
-    const {userID} = JSON.parse(req.headers['x-user']);
+    const userID = JSON.parse(req.headers['x-user']);
     if (!userID) {
         res.status(401).send("no id found");
         return;
     }
-    const {channelID} = req.params.channelID;
+    const channelID = req.params.channelID;
     const channel = await Channel.findOne({"id" : channelID});
     if (!channel) {
-        res.status(401).send("Channel not exist");
+        res.status(400).send("Channel not exist channelID");
         return;
     }
     // If this is a private channel and the current user is not a member, respond with a 
@@ -63,37 +76,43 @@ specificChannelPostHandler = async function(req, res, {Channel, Message}) {
     // Otherwise, create a new message in this channel using the JSON in the request body.
     // The only message property you should read from the request is body. Set the others based on context.
     const{body} = req.body;
+    if (!body) {
+        res.status(400).send("no body found");
+        return;
+    }
     // get user profile from MySQL db
     try {
         userName = "";
-        var userNameFromDB = await querySQL("SELECT username FROM user WHERE id = " + mysql.escape(userID));
-        if (userNameFromDB) {
-            userName = userNameFromDB[0].userName;
-        } else {
-            res.status(500).send("username not found");
-        }
+        var qry = "SELECT username FROM user WHERE id = " + mysql.escape(userID);
+        sqlConnection.query(qry, function (err, result) {
+            if (err) {
+              console.log('error retrieving new user info:', err.message);
+              return;
+            }
+            userName = result[0]
+        });
     } catch (e) {
-        res.status.send(500).send("There was an issue getting the channels")
+        res.status.send(500).send("There was an issue getting the user")
         return;
     }
     users = {"id":userID, "username": userName};
     createdAt = new Date();
-    creator = users
     const message = {
         "channelID": channelID,
         "body": body,
         "createdAt": createdAt,
-        "creator": users,
-        "editedAt": createdAt
+        "creator": users
     };
     const query = new Message(message);
     query.save((err, newMessage) => {
         if (err) {
-            res.status(400).send('unable to create a new channel');
+            res.status(400).send('unable to create a new message' + err);
             return;
         }
         res.status(201).json(newMessage);
-        res.setHeader("Content-Type", "application/json");
+        if (req.get('Content-Type') != "application/json") {
+            res.setHeader('Content-Type', "application/json");
+        }
         return;
     });
 };
@@ -102,24 +121,24 @@ specificChannelPostHandler = async function(req, res, {Channel, Message}) {
 
 
 specificChannelPatchHandler = async function(req, res, {Channel}) {
-    if (!('X-User' in req.header)) {
+    if (!req.get('x-user')) {
         res.status(401).send("unauthorized user");
+        return;
     }
-    // parse x-user to get user id
-    const {userID} = JSON.parse(req.headers['x-user']);
+    const userID = JSON.parse(req.headers['x-user']);
     if (!userID) {
         res.status(401).send("no id found");
         return;
     }
-    const {channelID} = req.params.channelID;
+    const channelID = req.params.channelID;
     const channel = await Channel.findOne({"id" : channelID});
     if (!channel) {
-        res.status(401).send("Channel not exist");
+        res.status(400).send("Channel not exist channelID");
         return;
     }
     // If the current user isn't the creator of this channel,
     // respond with the status code 403 (Forbidden).
-    if (!channel['creator'].id != userID) {
+    if (channel['creator'].id != userID) {
        res.status(403).send("creator not found");
        return; 
     } 
@@ -128,44 +147,55 @@ specificChannelPatchHandler = async function(req, res, {Channel}) {
     const{name, description} = req.body;
     //TODO: how to respond a new copy of updated channel? the id would be auto-incremented and be unique
     //TODO: findOneAndUpdate?
-    const filter = {'id' : channelID};
-    const update = {'name' : name, 'description' : description};
-    const updateChannel = Channel.findOneAndUpdate(filter, update, {
-        new: true
-    });
+    console.log("debug")
+    // Channel.findOneAndUpdate({id : channelID}, { $set: {name : name, description : description}}, {}, function(err, data) {
+    //     if (err) {
+    //         console.log(err);
+    //     } else if (!data) {
+    //         console.log("data not found" + data);
+    //     } else if (data) {
+    //         console.log(data + name + description)
+    //     }
+    // });
+    await Channel.update({id: channelID}, {$set:{name: name, description : description}});
+    console.log(channelID)
+    console.log(channel['name'] + channel['description'])
+    console.log(name + description)
     // status code send with json created object
-    const query = new Channel(updateChannel);
+    const query = new Channel(channel);
     //TODO: is here we stored in the DB?
     query.save((err, newChannel) => {
         if (err) {
-            res.status(400).send('unable to create a new channel');
+            res.status(400).send('unable to update a new channel' + err + channel['name'] + channel['description']);
             return;
         }
         res.json(newChannel);
-        res.setHeader("Content-Type", "application/json");
+        if (req.get('Content-Type') != "application/json") {
+            res.setHeader('Content-Type', "application/json");
+        }
         return;
     });
 };
 
 specificChannelDeleteHandler = async function(req, res, {Channel, Message}) {
-    if (!('X-User' in req.header)) {
+    if (!req.get('x-user')) {
         res.status(401).send("unauthorized user");
+        return;
     }
-    // parse x-user to get user id
-    const {userID} = JSON.parse(req.headers['x-user']);
+    const userID = JSON.parse(req.headers['x-user']);
     if (!userID) {
         res.status(401).send("no id found");
         return;
     }
-    const {channelID} = req.params.channelID;
+    const channelID = req.params.channelID;
     const channel = await Channel.findOne({"id" : channelID});
     if (!channel) {
-        res.status(401).send("Channel not exist");
+        res.status(400).send("Channel not exist channelID");
         return;
     }
     // If the current user isn't the creator of this channel,
     // respond with the status code 403 (Forbidden).
-    if (!channel['creator'].id != userID) {
+    if (channel['creator'].id != userID) {
        res.status(403).send("creator not found");
        return; 
     } 
