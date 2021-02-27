@@ -131,7 +131,7 @@ specificChannelPatchHandler = async function(req, res, {Channel}) {
         return;
     }
     const channelID = req.params.channelID;
-    const channel = await Channel.findOne({"id" : channelID});
+    const channel = await Channel.findOne({"id" : channelID}).exec();
     if (!channel) {
         res.status(400).send("Channel not exist channelID");
         return;
@@ -145,36 +145,20 @@ specificChannelPatchHandler = async function(req, res, {Channel}) {
     // Otherwise, update only the name and/or description using the JSON in the request body and respond with
     // a copy of the newly-updated channel, encoded as a JSON object. 
     const{name, description} = req.body;
-    //TODO: how to respond a new copy of updated channel? the id would be auto-incremented and be unique
-    //TODO: findOneAndUpdate?
-    console.log("debug")
-    // Channel.findOneAndUpdate({id : channelID}, { $set: {name : name, description : description}}, {}, function(err, data) {
-    //     if (err) {
-    //         console.log(err);
-    //     } else if (!data) {
-    //         console.log("data not found" + data);
-    //     } else if (data) {
-    //         console.log(data + name + description)
-    //     }
-    // });
-    await Channel.update({id: channelID}, {$set:{name: name, description : description}});
-    console.log(channelID)
-    console.log(channel['name'] + channel['description'])
-    console.log(name + description)
-    // status code send with json created object
-    const query = new Channel(channel);
-    //TODO: is here we stored in the DB?
-    query.save((err, newChannel) => {
+    Channel.findOneAndUpdate({"id" : channelID}, { $set: {"name" : name, "description" : description}}, { new: true }, function(err, data) {
         if (err) {
-            res.status(400).send('unable to update a new channel' + err + channel['name'] + channel['description']);
-            return;
+            console.log(err);
+        } else if (!data) {
+            console.log("data not found" + data);
+        } else if (data) {
+            console.log(data);
+            res.json(data);
+            if (req.get('Content-Type') != "application/json") {
+                res.setHeader('Content-Type', "application/json");
+            }   
         }
-        res.json(newChannel);
-        if (req.get('Content-Type') != "application/json") {
-            res.setHeader('Content-Type', "application/json");
-        }
-        return;
     });
+  
 };
 
 specificChannelDeleteHandler = async function(req, res, {Channel, Message}) {
