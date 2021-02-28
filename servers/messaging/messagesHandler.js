@@ -18,7 +18,7 @@ patchMessageHandler = async (req, res, {Message}) => {
     return;
   }
 
-  Message.findOneAndUpdate({"id": messageID}, {$set:{"body": message}}, function(err, data) {
+  Message.findOneAndUpdate({"id": messageID}, {$set:{"body": message, "editedAt": new Date()}}, function(err, data) {
     if (err) {
         res.status(400).send("message: " + data + " delete error: " + err);
         return;
