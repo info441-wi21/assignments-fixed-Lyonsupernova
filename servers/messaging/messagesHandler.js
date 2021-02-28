@@ -14,15 +14,15 @@ patchMessageHandler = async (req, res, {Message}) => {
     return;
   }
 
-  try {
-    const newMessage = await Message.findOneAndUpdate({"id": messageID}, {$set:{"body": message}});
-    res.setHeader("Content-Type", "application/json");
-    res.status(200);
-    res.json(newMessage);
-  } catch (e) {
-    res.status(500).send("Something wrong with updating the message");
-    return;
-  }
+  await Message.findOneAndUpdate({"id": messageID}, {$set:{"body": message}}, function(err, data) {
+    if (err) {
+        res.status(400).send("message: " + data + " delete error: " + err);
+        return;
+    }
+  });
+  res.setHeader("Content-Type", "application/json");
+  res.status(200);
+    //res.json(newMessage);
 }
 
 // Delete Handler for /v1/messages/{messageID}
@@ -40,12 +40,12 @@ deleteMessageHandler = async (req, res, {Message}) => {
     return;
   }
 
-  try {
-    await Message.findOneAndRemove({"id": messageID});
-  } catch(e) {
-    res.status(500).send("Something wrong with deleting the message");
-    return;
-  }
+  await Message.findOneAndRemove({"id": messageID}, function(err, data) {
+    if (err) {
+        res.status(400).send("message: " + data + " delete error: " + err);
+        return;
+    }
+  });
   res.status(200).send("Deleted message sucessfully");
 }
 

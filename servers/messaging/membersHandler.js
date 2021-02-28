@@ -2,7 +2,6 @@ const mysql = require('mysql')
 const mongoose = require('mongoose')
 mongoose.set('useFindAndModify', false);
 
-
 // if mysql connection is needed
 /*
 var sqlConnection = mysql.createConnection ({
@@ -57,16 +56,18 @@ deleteMembersHandler = async (req, res, {Channel}) => {
   }
 
   // update new members lists
-  try {
-    const memberID = JSON.parse(req.body['id']);
-    //res.json(req.body['id']);
-    currDocument['members'] = currDocument['members'].filter(el => el['id'] != memberID);
-    const newChannel = await Channel.findOneAndUpdate({"id": channelID},{$set:{"members": currDocument['members']}});
-    res.json(newChannel);
-  } catch (e) {
-    res.status(500).send("Something wrong with updating new member list");
-    return;
-  }
+  const memberID = JSON.parse(req.body['id']);
+  //res.json(req.body['id']);
+  currDocument['members'] = currDocument['members'].filter(el => el['id'] != memberID);
+  const newChannel = await Channel.findOneAndUpdate(
+    {"id": channelID}, {$set:{"members": currDocument['members']}},
+    function(err, data) {
+    if (err) {
+        res.status(400).send("message: " + data + " delete error: " + err);
+        return;
+    }
+  });
+  res.json(newChannel);
   res.status(200).send('Member has been deleted');
 }
 
