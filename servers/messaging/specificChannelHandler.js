@@ -46,7 +46,7 @@ specificChannelGetHandler = async function(req, res, {Channel, Message}) {
             res.setHeader("Content-Type", "application/json");
             res.json(messages);
         } else {
-            const messages = await Message.find({"channelID":channelID, "id": {$ls: beforeMessageId}}).sort({"editedAt":-1}).limit(100);
+            const messages = await Message.find({"channelID":channelID, "id": {$lt: beforeMessageId}}).sort({"editedAt":-1}).limit(100);
             // encoded as a JSON array of message model objects.
             // Include a Content-Type header set to application/json so that your client knows what sort of data
             // is in the response body.
@@ -54,7 +54,7 @@ specificChannelGetHandler = async function(req, res, {Channel, Message}) {
             res.json(messages);
         }
     } catch (e) {
-        console.log("message not found most recent 100");
+        console.log("message not found most recent 100" + e);
     }
 };
 
