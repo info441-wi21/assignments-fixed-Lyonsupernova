@@ -18,14 +18,14 @@ patchMessageHandler = async (req, res, {Message}) => {
     return;
   }
 
-  await Message.findOneAndUpdate({"id": messageID}, {$set:{"body": message}}, function(err, data) {
+  Message.findOneAndUpdate({"id": messageID}, {$set:{"body": message}}, function(err, data) {
     if (err) {
         res.status(400).send("message: " + data + " delete error: " + err);
         return;
     }
+    res.setHeader("Content-Type", "application/json");
+    res.status(200);
   });
-  res.setHeader("Content-Type", "application/json");
-  res.status(200);
     //res.json(newMessage);
 }
 

@@ -27,19 +27,19 @@ specificChannelGetHandler = async function(req, res, {Channel, Message}) {
         res.status(400).send("Channel not exist channelID");
         return;
     }
-    // If this is a private channel and the current user is not a member, respond with a 
+    // If this is a private channel and the current user is not a member, respond with a
     // 403 (Forbidden) status code.
-    if (!channel['members'].some(el => el.id == userID) && channel.private) {
+    if (!channel['members'].some(el => el["id"] == userID) && channel.private) {
        res.status(403).send("member not private");
-       return; 
-    } 
-    // Otherwise, respond with the most recent 100 messages posted to the specified channel, 
+       return;
+    }
+    // Otherwise, respond with the most recent 100 messages posted to the specified channel,
     try {
         //TODO: messaged most recent 100
         const messages = await Message.find({"channelID":channelID}).sort({"id":-1}).limit(100);
-        // encoded as a JSON array of message model objects. 
+        // encoded as a JSON array of message model objects.
         res.json(messages);
-        // Include a Content-Type header set to application/json so that your client knows what sort of data 
+        // Include a Content-Type header set to application/json so that your client knows what sort of data
         // is in the response body.
         res.setHeader("Content-Type", "application/json");
     } catch (e) {
@@ -67,12 +67,12 @@ specificChannelPostHandler = async function(req, res, {Channel, Message}) {
         res.status(400).send("Channel not exist channelID");
         return;
     }
-    // If this is a private channel and the current user is not a member, respond with a 
+    // If this is a private channel and the current user is not a member, respond with a
     // 403 (Forbidden) status code.
-    if (!channel['members'].some(el => el.id == userID) && channel.private) {
+    if (!channel['members'].some(el => el["id"] == userID) && channel.private) {
        res.status(403).send("member not private");
-       return; 
-    } 
+       return;
+    }
     // Otherwise, create a new message in this channel using the JSON in the request body.
     // The only message property you should read from the request is body. Set the others based on context.
     const{body} = req.body;
@@ -109,10 +109,10 @@ specificChannelPostHandler = async function(req, res, {Channel, Message}) {
             res.status(400).send('unable to create a new message' + err);
             return;
         }
-        res.status(201).json(newMessage);
         if (req.get('Content-Type') != "application/json") {
             res.setHeader('Content-Type', "application/json");
         }
+        res.status(201).json(newMessage);
         return;
     });
 };
@@ -140,10 +140,10 @@ specificChannelPatchHandler = async function(req, res, {Channel}) {
     // respond with the status code 403 (Forbidden).
     if (channel['creator'].id != userID) {
        res.status(403).send("creator not found");
-       return; 
-    } 
+       return;
+    }
     // Otherwise, update only the name and/or description using the JSON in the request body and respond with
-    // a copy of the newly-updated channel, encoded as a JSON object. 
+    // a copy of the newly-updated channel, encoded as a JSON object.
     const{name, description} = req.body;
     Channel.findOneAndUpdate({"id" : channelID}, { $set: {"name" : name, "description" : description}}, { new: true }, function(err, data) {
         if (err) {
@@ -152,13 +152,13 @@ specificChannelPatchHandler = async function(req, res, {Channel}) {
             console.log("data not found" + data);
         } else if (data) {
             console.log(data);
-            res.json(data);
             if (req.get('Content-Type') != "application/json") {
                 res.setHeader('Content-Type', "application/json");
-            }   
+            }
+            res.json(data);
         }
     });
-  
+
 };
 
 specificChannelDeleteHandler = async function(req, res, {Channel, Message}) {
@@ -181,9 +181,9 @@ specificChannelDeleteHandler = async function(req, res, {Channel, Message}) {
     // respond with the status code 403 (Forbidden).
     if (channel['creator'].id != userID) {
        res.status(403).send("the user is not the creator of the channel");
-       return; 
-    } 
-    // delete the channel and all messages related to it. 
+       return;
+    }
+    // delete the channel and all messages related to it.
     // Respond with a plain text message indicating that the delete was successful.
     Message.deleteMany({'channelID' : channelID}, function(err, data) {
         if (err) {
@@ -197,7 +197,7 @@ specificChannelDeleteHandler = async function(req, res, {Channel, Message}) {
             return;
         }
         res.status(200).send("Deleted channel sucessfully: " + data);
-    });  
+    });
 };
 
 

@@ -37,8 +37,14 @@ postMembersHandler = async(req, res, {Channel}) => {
   // TODO: add another for loop to check if the user is already in the channel
   const member = req.body;
   currDocument['members'] = currDocument['members'].push(member);
-  await Channel.findOneAndUpdate({"id": channelID},{$set:{"members": currDocument['members']}});
-  res.status(201).send('Member has been added');
+  Channel.findOneAndUpdate({"id": channelID},{$set:{"members": currDocument['members']}}, { new: true }, function(err, data) {
+    if (err) {
+        res.status(400).send("message: " + data + " delete error: " + err);
+        return;
+    }
+    //res.status(201).send('Member has been added');
+    res.json(data);
+  });
 }
 
 // delete handler for /v1/channels/{channelID}/members
@@ -60,16 +66,17 @@ deleteMembersHandler = async (req, res, {Channel}) => {
   const memberID = JSON.parse(req.body['id']);
   //res.json(req.body['id']);
   currDocument['members'] = currDocument['members'].filter(el => el['id'] != memberID);
-  const newChannel = await Channel.findOneAndUpdate(
+  Channel.findOneAndUpdate(
     {"id": channelID}, {$set:{"members": currDocument['members']}},
+    { new: true },
     function(err, data) {
     if (err) {
         res.status(400).send("message: " + data + " delete error: " + err);
         return;
     }
+    //res.status(200).send('Member has been deleted');
+    res.json(data);
   });
-  res.json(newChannel);
-  res.status(200).send('Member has been deleted');
 }
 
 module.exports = {postMembersHandler, deleteMembersHandler};
