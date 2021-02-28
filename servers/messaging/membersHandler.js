@@ -1,9 +1,10 @@
-const mysql = require('mysql')
+// initial settings
 const mongoose = require('mongoose')
 mongoose.set('useFindAndModify', false);
 
 // if mysql connection is needed
 /*
+const mysql = require('mysql')
 var sqlConnection = mysql.createConnection ({
   host: 'localhost',
   user: 'root',

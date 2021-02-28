@@ -1,3 +1,7 @@
+// initial settings
+const mongoose = require('mongoose')
+mongoose.set('useFindAndModify', false);
+
 // Patch Handler for /v1/messages/{messageID}
 patchMessageHandler = async (req, res, {Message}) => {
   if (!req.get('x-user')) {
