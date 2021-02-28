@@ -33,15 +33,26 @@ specificChannelGetHandler = async function(req, res, {Channel, Message}) {
        res.status(403).send("member not private");
        return;
     }
+    const beforeMessageId = req.body["before"];
+   
     // Otherwise, respond with the most recent 100 messages posted to the specified channel,
     try {
         //TODO: messaged most recent 100
-        const messages = await Message.find({"channelID":channelID}).sort({"id":-1}).limit(100);
-        // encoded as a JSON array of message model objects.
-        res.json(messages);
-        // Include a Content-Type header set to application/json so that your client knows what sort of data
-        // is in the response body.
-        res.setHeader("Content-Type", "application/json");
+        if (!beforeMessageId) {
+            const messages = await Message.find({"channelID":channelID}).sort({"editedAt":-1}).limit(100);
+            // encoded as a JSON array of message model objects.
+            // Include a Content-Type header set to application/json so that your client knows what sort of data
+            // is in the response body.
+            res.setHeader("Content-Type", "application/json");
+            res.json(messages);
+        } else {
+            const messages = await Message.find({"channelID":channelID, "id": {$ls: beforeMessageId}}).sort({"editedAt":-1}).limit(100);
+            // encoded as a JSON array of message model objects.
+            // Include a Content-Type header set to application/json so that your client knows what sort of data
+            // is in the response body.
+            res.setHeader("Content-Type", "application/json");
+            res.json(messages);
+        }
     } catch (e) {
         console.log("message not found most recent 100");
     }
@@ -101,7 +112,8 @@ specificChannelPostHandler = async function(req, res, {Channel, Message}) {
         "channelID": channelID,
         "body": body,
         "createdAt": createdAt,
-        "creator": users
+        "creator": users,
+        "editedAt": createdAt,
     };
     const query = new Message(message);
     query.save((err, newMessage) => {
