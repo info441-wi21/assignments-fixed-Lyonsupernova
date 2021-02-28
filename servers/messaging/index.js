@@ -33,14 +33,14 @@ const {specificChannelGetHandler,
        specificChannelPatchHandler,
        specificChannelDeleteHandler} = require('./specificChannelHandler');
 
-const {memberPostHandler,
-       memberDeleteHandler} = require('./membersHandler');
+const {postMembersHandler,
+       deleteMembersHandler} = require('./membersHandler');
 
-const {messagePatchHandler,
-       messageDeleteHandler} = require('./messagesHandler');      
+const {patchMessageHandler,
+       deleteMessageHandler} = require('./messagesHandler');
 const RequestWrapper = (handler, SchemeAndDBForwarder) => {
     return (req, res) => {
-        handler(req, res, SchemeAndDBForwarder)
+        handler(req, res, SchemeAndDBForwarder);
     }
 };
 
@@ -51,10 +51,10 @@ app.post("/v1/channels/:channelID", RequestWrapper(specificChannelPostHandler, {
 app.patch("/v1/channels/:channelID", RequestWrapper(specificChannelPatchHandler, { Channel }))
 app.delete("/v1/channels/:channelID", RequestWrapper(specificChannelDeleteHandler, { Channel, Message }))
 
-app.post("/v1/channels/:channelID/members", RequestWrapper(memberPostHandler, { Channel }))
-app.delete("/v1/channels/:channelID/members", RequestWrapper(memberDeleteHandler, { Channel }))
-app.patch("/v1/messages/:messageID", RequestWrapper(messagePatchHandler, { Message }))
-app.delete("/v1/messages/:messageID", RequestWrapper(messageDeleteHandler, { Message }))
+app.post("/v1/channels/:channelID/members", RequestWrapper(postMembersHandler, { Channel }))
+app.delete("/v1/channels/:channelID/members", RequestWrapper(deleteMembersHandler, { Channel }))
+app.patch("/v1/messages/:messageID", RequestWrapper(patchMessageHandler, { Message }))
+app.delete("/v1/messages/:messageID", RequestWrapper(deleteMessageHandler, { Message }))
 
 
 async function main() {

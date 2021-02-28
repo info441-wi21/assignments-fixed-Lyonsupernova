@@ -1,5 +1,10 @@
 const mysql = require('mysql')
+const mongoose = require('mongoose')
+mongoose.set('useFindAndModify', false);
 
+
+// if mysql connection is needed
+/*
 var sqlConnection = mysql.createConnection ({
   host: 'localhost',
   user: 'root',
@@ -8,71 +13,56 @@ var sqlConnection = mysql.createConnection ({
   database: 'mysqldatabase',
   insecureAuth: true
 });
+*/
 
 // post handler for /v1/channels/{channelID}/members
-const postMembersHandler = async (req, res, {Channel}) => {
+postMembersHandler = async(req, res, {Channel}) => {
   if (!req.get('x-user')) {
     res.status(401).send("unauthorized user");
     return;
   }
 
-  try {
-    const channelID = req.url.split('/')[2];
-    const userID = JSON.parse(req.headers['x-user']);
-    //check creator
-    var currDocument = Channel.findOne({"id": channelID}, {"creator": 1, "members": 1});
-    var parsed = JSON.parse(currDocument);
-    if (parsed.creator != userID) {
-      res.status(403).send("Incorrect creator")
-    }
-  } catch (e) {
-    res.status(500).send("Something wrong with validating creator");
+  const channelID = req.url.split('/')[3];
+  const userID = JSON.parse(req.headers['x-user']);
+  if (!userID) {
+  res.status(401).send("no id found");
     return;
   }
+  //check creator
+  const currDocument = await Channel.findOne({"id": channelID}, {"creator": 1, "members": 1});
+  if (currDocument['creator']['id'] != userID) {
+    res.status(403).send("Incorrect creator")
+  }
 
-  // Find the member profile in mysql
-  const memberID = req.body;
-  var newMembers;
-  var qry = 'SELECT * from user WHERE id = ' + mysql.escape(memberID);
-  sqlConnection.query(qry, function (err, result) {
-    if (err) {
-      console.log('error retrieving new member info:', err.message);
-      return;
-    }
-    newMembers = parsed.members.push(result[0]);
-  });
-
-  await Channel.update({"id": channelID},{$set:{"members": newMembers}});
+  // TODO: add another for loop to check if the user is already in the channel
+  const member = req.body;
+  currDocument['members'] = currDocument['members'].push(member);
+  await Channel.findOneAndUpdate({"id": channelID},{$set:{"members": currDocument['members']}});
   res.status(201).send('Member has been added');
 }
 
 // delete handler for /v1/channels/{channelID}/members
-const deleteMembersHandler = async (req, res, {Channel}) => {
+deleteMembersHandler = async (req, res, {Channel}) => {
   if (!req.get('x-user')) {
     res.status(401).send("unauthorized user");
     return;
   }
 
   //check creator
-  try {
-    const channelID = req.url.split('/')[2];
-    const userID = JSON.parse(req.headers['x-user']);
-    var currDocument = Channel.findOne({"id": channelID}, {"creator": 1, "members": 1});
-    var parsed = JSON.parse(currDocument);
-    if (parsed.creator != userID) {
-      res.status(403).send("Incorrect creator")
-    }
-  } catch (e) {
-    res.status(500).send("Something wrong with validating creator");
-    return;
+  const channelID = req.url.split('/')[3];
+  const userID = JSON.parse(req.headers['x-user']);
+  const currDocument = await Channel.findOne({"id": channelID}, {"creator": 1, "members": 1});
+  if (currDocument['creator']['id'] != userID) {
+    res.status(403).send("Incorrect creator");
   }
 
   // update new members lists
   try {
-    const memberID = req.body;
-    var members = parsed.members;
-    members = members.fileter(member => member.id != memberID)
-    await Channel.update({"id": channelID},{$set:{"members": members}});
+    const memberID = JSON.parse(req.body['id']);
+    //res.json(req.body['id']);
+    currDocument['members'] = currDocument['members'].filter(el => el['id'] != memberID);
+    const newChannel = await Channel.findOneAndUpdate({"id": channelID},{$set:{"members": currDocument['members']}});
+    res.json(newChannel);
   } catch (e) {
     res.status(500).send("Something wrong with updating new member list");
     return;
