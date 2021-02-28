@@ -6,9 +6,15 @@ patchMessageHandler = async (req, res, {Message}) => {
   }
 
   // update the message
+  const messageID = req.url.split('/')[3];
+  const message = req.body['body'];
+  const targetMessage = await Message.findOne({"id": messageID});
+  if (targetMessage == null) {
+    res.status(404).send("No message found");
+    return;
+  }
+
   try {
-    const messageID = req.url.split('/')[3];
-    const message = JSON.parse(req.body);
     const newMessage = await Message.findOneAndUpdate({"id": messageID}, {$set:{"body": message}});
     res.setHeader("Content-Type", "application/json");
     res.status(200);
@@ -27,13 +33,14 @@ deleteMessageHandler = async (req, res, {Message}) => {
   }
 
   // Delete the message body
+  const messageID = req.url.split('/')[3];
+  const targetMessage = await Message.findOne({"id": messageID});
+  if (targetMessage == null) {
+    res.status(404).send("No message found");
+    return;
+  }
+
   try {
-    const messageID = req.url.split('/')[3];
-    const targetMessage = Message.findOne({"id": messageID});
-    if (targetMessage == null) {
-      res.status(404).send("No message found");
-      return;
-    }
     await Message.findOneAndRemove({"id": messageID});
   } catch(e) {
     res.status(500).send("Something wrong with deleting the message");
