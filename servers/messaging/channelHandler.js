@@ -1,12 +1,17 @@
 // MySQL connection
 const mysql = require('mysql')
 
+const mysqlHost = process.env.MYSQL_HOST;
+const mysqlPassword = process.env.MYSQL_ROOT_PASSWORD;
+const mysqlUser = process.env.MySQL_USER;
+const mysqlDatabase = process.env.MYSQL_DATABASE;
+const mysqlPort = process.env.MYSQL_PORT
 var sqlConnection = mysql.createConnection ({
-  host: 'localhost',
-  user: 'root',
-  password: '123456',
-  port: '3306',
-  database: 'mysqldatabase',
+  host: mysqlHost,
+  user: mysqlUser,
+  password: mysqlPassword,
+  port: mysqlPort,
+  database: mysqlDatabase,
   insecureAuth: true
 });
 

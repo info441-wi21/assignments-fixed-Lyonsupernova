@@ -3,14 +3,9 @@ const express = require('express')
 const {channelSchema, messageSchema} = require('./schemas')
 const Channel = mongoose.model("Channel", channelSchema)
 const Message = mongoose.model("Message", messageSchema)
-// const port = process.env.PORT;
-// const mongoPort = process.env.MONGOPORT;
-// const mongoEndPoint = "mongodb://" + mongoPort;
-
-// lsof -i tcp:4000
-// kill -9 pid
-const mongoEndPoint = "mongodb://localhost:27017/test";
-const port = 4000;
+const mongoPort = process.env.MONGOPORT;
+const mongoEndPoint = "mongodb://" + mongoPort;
+const port = process.env.PORT;
 const app = express();
 app.use(express.json());
 
@@ -59,6 +54,6 @@ app.delete("/v1/messages/:messageID", RequestWrapper(deleteMessageHandler, { Mes
 
 async function main() {
     app.listen(port, "", () => {
-        console.log(`server listening ${port}`);
+        console.log(`server is listening ${port}`);
     })
 }
