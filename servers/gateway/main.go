@@ -4,10 +4,12 @@ import (
 	"assignments-fixed-Lyonsupernova/servers/gateway/handlers"
 	"assignments-fixed-Lyonsupernova/servers/gateway/models/users"
 	"assignments-fixed-Lyonsupernova/servers/gateway/sessions"
-	"assignments-fixed-Lyonsupernova/servers/summary"
 	"log"
+	"math/rand"
 	"net/http"
+	"net/http/httputil"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/go-redis/redis"
@@ -15,27 +17,17 @@ import (
 
 //main is the main entry point for the server
 func main() {
-	/* TODO: add code to do the following
-	- Read the ADDR environment variable to get the address
-	  the server should listen on. If empty, default to ":80"
-	- Create a new mux for the web server.
-	- Tell the mux to call your handlers.SummaryHandler function
-	  when the "/v1/summary" URL pat
-	  h is requested.
-	- Start a web server listening on the address you read from
-	  the environment variable, using the mux you created as
-	  the root handler. Use log.Fatal() to report any errors
-	  that occur when trying to start the web server.
-	*/
 
+	sessionID := os.Getenv("SESSIONKEY")
+	redisAddr := os.Getenv("REDISADDR")
+	TLSKEY := os.Getenv("TLSKEY")
+	TLSCERT := os.Getenv("TLSCERT")
+	messageAddr := strings.Split(os.Getenv("MESSAGESADDR"), ",")
+	summaryAddr := strings.Split(os.Getenv("SUMMARYADDR"), ",")
 	addr := os.Getenv("ADDR")
 	if len(addr) == 0 {
 		addr = ":443"
 	}
-	sessionID := os.Getenv("SESSIONKEY")
-	redisAddr := os.Getenv("REDISADDR")
-	messageAddr := os.Getenv("MESSAGESADDR")
-	summaryAddr := os.Getenv("SUMMARYADDR")
 
 	DSN := os.Getenv("DSN")
 	if len(redisAddr) == 0 {
@@ -57,15 +49,49 @@ func main() {
 		UserStore:    userStore,
 	}
 
-	TLSKEY := os.Getenv("TLSKEY")
-	TLSCERT := os.Getenv("TLSCERT")
+	messageDirector := func(r *http.Request) {
+		if len(r.Header.Get("X-User")) == 0 {
+			r.Header.Add("X-user", "")
+		}
+		auth := r.Header.Get("Authorization")
+		if len(auth) != 0 {
+			sessID := sessions.SessionID(strings.TrimPrefix(auth, "Bearer "))
+			sessState := &handlers.SessionState{}
+			err := contextHandler.SessionStore.Get(sessID, sessState)
+			if err == nil {
+				r.Header.Set("X-User", string(sessState.User.ID))
+			} else {
+				r.Header.Del("X-User")
+			}
+		}
+
+		rand.Seed(time.Now().UnixNano())
+		serveNum := rand.Intn(len(messageAddr))
+		r.Host = messageAddr[serveNum]
+		r.URL.Host = messageAddr[serveNum]
+		r.URL.Scheme = "http"
+	}
+	messageProxy := &httputil.ReverseProxy{Director: messageDirector}
+
+	summaryDirector := func(r *http.Request) {
+		rand.Seed(time.Now().UnixNano())
+		serveNum := rand.Intn(len(summaryAddr))
+		r.Host = summaryAddr[serveNum]
+		r.URL.Host = summaryAddr[serveNum]
+		r.URL.Scheme = "http"
+	}
+	summaryProxy := &httputil.ReverseProxy{Director: summaryDirector}
+
 	mux := http.NewServeMux()
 	log.Printf("server is listening at %s...", addr)
-	mux.HandleFunc("/v1/summary/", summary.SummaryHandler)
 	mux.HandleFunc("/v1/users", contextHandler.UsersHandler)
 	mux.HandleFunc("/v1/users/", contextHandler.SpecificUserHandler)
 	mux.HandleFunc("/v1/sessions", contextHandler.SessionsHandler)
 	mux.HandleFunc("/v1/sessions/", contextHandler.SpecificSessionHandler)
+	mux.Handle("/v1/channels", messageProxy)
+	mux.Handle("/v1/channels/", messageProxy)
+	mux.Handle("/v1/messages/", messageProxy)
+	mux.Handle("/v1/summary/", summaryProxy)
 	wrappedMux := handlers.NewHeaderHandler(mux)
 	log.Fatal(http.ListenAndServeTLS(addr, TLSCERT, TLSKEY, wrappedMux))
 }
