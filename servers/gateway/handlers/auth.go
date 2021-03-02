@@ -76,8 +76,6 @@ func (ch *ContextHandler) UsersHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
-	json, _ := json.Marshal(insertUsr)
-	w.Write([]byte(json))
 }
 
 // SpecificUserHandler authenticate the user and get the seesion state
