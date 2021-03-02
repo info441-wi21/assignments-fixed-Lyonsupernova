@@ -131,8 +131,6 @@ func (ch *ContextHandler) SpecificUserHandler(w http.ResponseWriter, r *http.Req
 			http.Error(w, "Bad request", http.StatusBadRequest)
 			return
 		}
-		json, _ := json.Marshal(usr)
-		w.Write([]byte(json))
 	} else if r.Method == http.MethodPatch {
 		if base != "me" {
 			userID, err := strconv.ParseInt(base, 10, 64)
@@ -176,8 +174,6 @@ func (ch *ContextHandler) SpecificUserHandler(w http.ResponseWriter, r *http.Req
 			http.Error(w, "Bad request", http.StatusBadRequest)
 			return
 		}
-		json, _ := json.Marshal(updateUsr)
-		w.Write([]byte(json))
 	} else {
 		http.Error(w, "Error request method", http.StatusMethodNotAllowed)
 	}
@@ -204,7 +200,7 @@ func (ch *ContextHandler) SessionsHandler(w http.ResponseWriter, r *http.Request
 		user, err := ch.UserStore.GetByEmail(userCredential.Email)
 		if err != nil {
 			log.Printf("The user's profile cannot be found")
-			http.Error(w, "Profiel not found", http.StatusUnauthorized)
+			http.Error(w, "Profile not found", http.StatusUnauthorized)
 			return
 		}
 
@@ -239,8 +235,6 @@ func (ch *ContextHandler) SessionsHandler(w http.ResponseWriter, r *http.Request
 			http.Error(w, "Bad request", http.StatusBadRequest)
 			return
 		}
-		json, _ := json.Marshal(user)
-		w.Write([]byte(json))
 	} else {
 		http.Error(w, "Error status method: only accept Post", http.StatusMethodNotAllowed)
 	}
@@ -257,8 +251,12 @@ func (ch *ContextHandler) SpecificSessionHandler(w http.ResponseWriter, r *http.
 		}
 
 		// end session
-		sessions.EndSession(r, ch.SessionID, ch.SessionStore)
-
+		sessionID, err := sessions.EndSession(r, ch.SessionID, ch.SessionStore)
+		if err != nil {
+			log.Printf("session has already been ended %s", sessionID)
+			http.Error(w, "Session error", http.StatusForbidden)
+			return
+		}
 		// print out sign out information
 		w.Write([]byte("signed out"))
 	} else {
