@@ -29,7 +29,7 @@ docker run \
     lyons124/sqldatabase
 
 export DSN=root:$MYSQL_DATABASE_PASSWORD@tcp\(sqldatabase:3306\)/$MYSQL_DATABASE
-export REDISADDR=redisServer:6379
+export REDISADDR=redis:6379
 
 docker run -d \
 --name gateway \
