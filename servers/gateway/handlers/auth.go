@@ -28,8 +28,7 @@ func (ch *ContextHandler) UsersHandler(w http.ResponseWriter, r *http.Request) {
 	// usr type users.NewUser
 	newUsr := &users.NewUser{}
 	// err := json.NewDecoder(r.Body).Decode(newUsr)
-	jsonResponseBody, _ := ioutil.ReadAll(r.Body)
-	err := json.Unmarshal([]byte(jsonResponseBody), newUsr)
+	err := json.NewDecoder(r.Body).Decode(newUsr)
 	if err != nil {
 		log.Printf("error decoding JSON: %v\n", err)
 		http.Error(w, "Bad request", http.StatusBadRequest)
@@ -41,8 +40,9 @@ func (ch *ContextHandler) UsersHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
+	usr := &users.User{}
 	// set usr as user from new user
-	usr, err := newUsr.ToUser()
+	usr, err = newUsr.ToUser()
 	if err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
@@ -50,15 +50,19 @@ func (ch *ContextHandler) UsersHandler(w http.ResponseWriter, r *http.Request) {
 
 	insertUsr, err := ch.UserStore.Insert(usr)
 	if err != nil {
-		log.Printf("User database insert error")
+		log.Printf("User database insert error %s", err)
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
 
 	// begin a session
-	_, err = sessions.BeginSession(ch.SessionID, ch.SessionStore, &SessionState{time.Now(), insertUsr}, w)
+	sessionState := &SessionState{
+		BeginDate: time.Now(),
+		User:      insertUsr,
+	}
+	_, err = sessions.BeginSession(ch.SessionID, ch.SessionStore, sessionState, w)
 	if err != nil {
-		log.Printf("Begin session error")
+		log.Printf("Begin session error %s", err)
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}

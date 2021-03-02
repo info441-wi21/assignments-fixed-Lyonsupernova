@@ -80,6 +80,7 @@ func (ms *MySQLStore) GetByUserName(username string) (*User, error) {
 //the newly-inserted User, complete with the DBMS-assigned ID
 func (ms *MySQLStore) Insert(user *User) (*User, error) {
 	ins := "insert into Users(Email, PassHash, UserName, FirstName, LastName, PhotoURL) values (?,?,?,?,?,?)"
+	// console.log(user.Email + user.UserName)
 	res, err := ms.Database.Exec(ins, user.Email, user.PassHash, user.UserName,
 		user.FirstName, user.LastName, user.PhotoURL)
 	if err != nil {

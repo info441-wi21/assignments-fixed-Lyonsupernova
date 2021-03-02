@@ -1,6 +1,6 @@
-docker build -t lyons124/sqldatabase .
+docker build -t lyons124/441mysql .
 
 
-docker push lyons124/sqldatabase
+docker push lyons124/441mysql
 
 
