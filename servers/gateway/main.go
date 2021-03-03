@@ -59,9 +59,15 @@ func main() {
 
 	messageDirector := func(r *http.Request) {
 		auth := r.Header.Get("Authorization")
+		log.Println(auth)
 		if len(auth) == 0 {
 			auth = r.URL.Query().Get("auth")
 		}
+
+		if len(r.Header.Get("X-User")) == 0 {
+			r.Header.Add("X-User", "")
+		}
+
 		sessID := sessions.SessionID(strings.TrimPrefix(auth, "Bearer "))
 		sessState := &handlers.SessionState{}
 		err := contextHandler.SessionStore.Get(sessID, sessState)
@@ -69,7 +75,10 @@ func main() {
 		if err == nil {
 			// create a new user object for messaging and encode as json
 			newUser := &messageUser{sessState.User.ID, sessState.User.UserName}
+			log.Printf("%d \n", sessState.User.ID)
+			log.Printf(sessState.User.UserName)
 			result, err := json.Marshal(newUser)
+			log.Println(string(result))
 			if err != nil {
 				log.Printf("Unable to encode X-User for messaging: %v", err)
 			}

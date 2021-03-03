@@ -4,27 +4,6 @@ docker network create info441
 docker rm -f redis
 docker run -d --name redis --network info441 redis
 
-# redeploy summary microservice
-docker rm -f summary
-docker rm -f lyons124/summary
-docker pull lyons124/summary
-docker run -d \
-    --name summary \
-    --network info441 \
-    lyons124/summary
-
-# redeploy messaging microservice
-docker pull lyons124/messaging
-docker rm -f messaging
-export MONGOADDR="mongodb://info441MongoDB:27017/message"
-export PORT=80
-docker run -d \
-    -e PORT=80 \
-    -e MONGOADDR=$MONGOADDR \
-    --name messaging \
-	--network info441 \
-    lyons124/messaging
-
 
 docker rm -f gateway
 docker pull lyons124/gateway:latest
