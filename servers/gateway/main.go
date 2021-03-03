@@ -4,6 +4,8 @@ import (
 	"assignments-fixed-Lyonsupernova/servers/gateway/handlers"
 	"assignments-fixed-Lyonsupernova/servers/gateway/models/users"
 	"assignments-fixed-Lyonsupernova/servers/gateway/sessions"
+	"encoding/json"
+	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
@@ -50,20 +52,30 @@ func main() {
 		UserStore:    userStore,
 	}
 
+	type messageUser struct {
+		id       int64
+		username string
+	}
+
 	messageDirector := func(r *http.Request) {
-		if len(r.Header.Get("X-User")) == 0 {
-			r.Header.Add("X-user", "")
-		}
 		auth := r.Header.Get("Authorization")
-		if len(auth) != 0 {
-			sessID := sessions.SessionID(strings.TrimPrefix(auth, "Bearer "))
-			sessState := &handlers.SessionState{}
-			err := contextHandler.SessionStore.Get(sessID, sessState)
-			if err == nil {
-				r.Header.Set("X-User", string(sessState.User.ID))
-			} else {
-				r.Header.Del("X-User")
+		if len(auth) == 0 {
+			auth = r.URL.Query().Get("auth")
+		}
+		sessID := sessions.SessionID(strings.TrimPrefix(auth, "Bearer "))
+		sessState := &handlers.SessionState{}
+		err := contextHandler.SessionStore.Get(sessID, sessState)
+
+		if err == nil {
+			// create a new user object for messaging and encode as json
+			newUser := &messageUser{sessState.User.ID, sessState.User.UserName}
+			result, err := json.Marshal(newUser)
+			if err != nil {
+				log.Printf("Unable to encode X-User for messaging: %v", err)
 			}
+			r.Header.Set("X-User", fmt.Sprint(string(result)))
+		} else {
+			r.Header.Del("X-User")
 		}
 
 		rand.Seed(time.Now().UnixNano())

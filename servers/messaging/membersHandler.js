@@ -17,13 +17,13 @@ var sqlConnection = mysql.createConnection ({
 
 // post handler for /v1/channels/{channelID}/members
 postMembersHandler = async(req, res, {Channel}) => {
-  if (!req.get('x-user')) {
+  if (!req.get('X-User')) {
     res.status(401).send("unauthorized user");
     return;
   }
 
   const channelID = req.url.split('/')[3];
-  const user = JSON.parse(req.headers['x-user']);
+  const user = JSON.parse(req.headers['X-User']);
   if (!user || !user['username'] || !user['id']) {
       res.status(401).send("no user found");
       return;
@@ -49,14 +49,14 @@ postMembersHandler = async(req, res, {Channel}) => {
 
 // delete handler for /v1/channels/{channelID}/members
 deleteMembersHandler = async (req, res, {Channel}) => {
-  if (!req.get('x-user')) {
+  if (!req.get('X-User')) {
     res.status(401).send("unauthorized user");
     return;
   }
 
   //check creator
   const channelID = req.url.split('/')[3];
-  const user = JSON.parse(req.headers['x-user']);
+  const user = JSON.parse(req.headers['X-User']);
   if (!user || !user['username'] || !user['id']) {
       res.status(401).send("no user found");
       return;

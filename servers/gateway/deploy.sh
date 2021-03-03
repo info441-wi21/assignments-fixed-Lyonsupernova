@@ -1,5 +1,5 @@
 sh build.sh
-
-docker push lyons124/gateway:latest
+sh ../messaging/build.sh
+sh ../summary/build.sh
 
 ssh ec2-user@api.lyonsupernova.me < update.sh

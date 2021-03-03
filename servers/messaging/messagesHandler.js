@@ -4,7 +4,7 @@ mongoose.set('useFindAndModify', false);
 
 // Patch Handler for /v1/messages/{messageID}
 patchMessageHandler = async (req, res, {Message}) => {
-  if (!req.get('x-user')) {
+  if (!req.get('X-User')) {
     res.status(401).send("unauthorized user");
     return;
   }
@@ -31,7 +31,7 @@ patchMessageHandler = async (req, res, {Message}) => {
 
 // Delete Handler for /v1/messages/{messageID}
 deleteMessageHandler = async (req, res, {Message}) => {
-  if (!req.get('x-user')) {
+  if (!req.get('X-User')) {
     res.status(401).send("unauthorized user");
     return;
   }

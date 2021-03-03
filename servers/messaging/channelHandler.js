@@ -1,11 +1,11 @@
 
 channelGetHandler = async(req, res, {Channel}) => {
-    if (!req.get('x-user')) {
+    if (!req.get('X-User')) {
         res.status(401).send("unauthorized user");
         return;
     }
     // parse x-user to get user id
-    const user = JSON.parse(req.headers['x-user']);
+    const user = JSON.parse(req.headers['X-User']);
     if (!user || !user['username'] || !user['id']) {
         res.status(401).send("no user found");
         return;
@@ -21,12 +21,12 @@ channelGetHandler = async(req, res, {Channel}) => {
 
 
 channelPostHandler = async(req, res, {Channel}) => {
-    if (!req.get('x-user')) {
+    if (!req.get('X-User')) {
         res.status(401).send("unauthorized user");
         return;
     }
     // parse x-user to get user id
-    const user = JSON.parse(req.headers['x-user']);
+    const user = JSON.parse(req.headers['X-User']);
     if (!user || !user['username'] || !user['id']) {
         res.status(401).send("no user found");
         return;

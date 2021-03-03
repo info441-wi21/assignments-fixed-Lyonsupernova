@@ -3,11 +3,11 @@ const mongoose = require('mongoose')
 mongoose.set('useFindAndModify', false);
 
 specificChannelGetHandler = async function(req, res, {Channel, Message}) {
-    if (!req.get('x-user')) {
+    if (!req.get('X-User')) {
         res.status(401).send("unauthorized user");
         return;
     }
-    const user = JSON.parse(req.headers['x-user']);
+    const user = JSON.parse(req.headers['X-User']);
     if (!user || !user['username'] || !user['id']) {
         res.status(401).send("no user found");
         return;
@@ -25,7 +25,7 @@ specificChannelGetHandler = async function(req, res, {Channel, Message}) {
        return;
     }
     const beforeMessageId = req.body["before"];
-   
+
     // Otherwise, respond with the most recent 100 messages posted to the specified channel,
     try {
         if (!beforeMessageId) {
@@ -53,11 +53,11 @@ specificChannelGetHandler = async function(req, res, {Channel, Message}) {
 
 
 specificChannelPostHandler = async function(req, res, {Channel, Message}) {
-    if (!req.get('x-user')) {
+    if (!req.get('X-User')) {
         res.status(401).send("unauthorized user");
         return;
     }
-    const user = JSON.parse(req.headers['x-user']);
+    const user = JSON.parse(req.headers['X-User']);
     if (!user || !user['username'] || !user['id']) {
         res.status(401).send("no user found");
         return;
@@ -107,11 +107,11 @@ specificChannelPostHandler = async function(req, res, {Channel, Message}) {
 
 
 specificChannelPatchHandler = async function(req, res, {Channel}) {
-    if (!req.get('x-user')) {
+    if (!req.get('X-User')) {
         res.status(401).send("unauthorized user");
         return;
     }
-    const userID = JSON.parse(req.headers['x-user']);
+    const userID = JSON.parse(req.headers['X-User']);
     if (!userID) {
         res.status(401).send("no id found");
         return;
@@ -148,11 +148,11 @@ specificChannelPatchHandler = async function(req, res, {Channel}) {
 };
 
 specificChannelDeleteHandler = async function(req, res, {Channel, Message}) {
-    if (!req.get('x-user')) {
+    if (!req.get('X-User')) {
         res.status(401).send("unauthorized user");
         return;
     }
-    const userID = JSON.parse(req.headers['x-user']);
+    const userID = JSON.parse(req.headers['X-User']);
     if (!userID) {
         res.status(401).send("no id found");
         return;
