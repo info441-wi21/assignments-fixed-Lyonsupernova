@@ -1,22 +1,23 @@
-docker rm -f message
-
-docker rm -f lyons124/messaging
-
 docker pull lyons124/messaging
+
+docker rm -f messaging
 
 export MONGOADDR="mongodb://mongodb:27017/message"
 export PORT=80
-export MONGOPORT=mongodb:27017
 
+# docker rm -f mongodb
 
-export MYSQL_PORT=3306
+# docker run -d \
+# -p 27017:27017 \
+# --name mongodb \
+# --network info441 \
+# mongo
 
 # running db instance
 docker run -d \
     -e PORT=80 \
-    -e MYSQL_PORT=3306 \
-    -e MONGOPORT=$MONGOPORT \
-    --name message \
+    -e MONGOADDR=$MONGOADDR \
+    --name messaging \
 	--network info441 \
     lyons124/messaging
 

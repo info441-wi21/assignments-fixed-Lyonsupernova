@@ -3,23 +3,22 @@ const express = require('express')
 const {channelSchema, messageSchema} = require('./schemas')
 const Channel = mongoose.model("Channel", channelSchema)
 const Message = mongoose.model("Message", messageSchema)
-const port = 4000
+// const port = 4000
 // const mongoPort = process.env.MONGOPORT;
-const mongoEndPoint = "mongodb://localhost:27017/test"
-// const mongoEndPoint = "mongodb://" + mongoPort;
-// const port = process.env.PORT;
+// const mongoEndPoint = "mongodb://localhost:27017/test"
+const mongoEndPoint = process.env.MONGOADDR
+const port = process.env.PORT;
 const app = express();
 app.use(express.json());
 
 const connect = () => {
-    mongoose.connect(mongoEndPoint);
+    mongoose.connect(mongoEndPoint, {useNewUrlParser:true});
 }
-
 connect();
 
-mongoose.connection.on('error', console.error)
-        .on('disconnected', connect)
-        .once('open', main);
+app.listen(port, "", () => {
+    console.log(`server is listening ${port}`);
+})
 const {
     channelGetHandler,
     channelPostHandler
@@ -52,10 +51,3 @@ app.post("/v1/channels/:channelID/members", RequestWrapper(postMembersHandler, {
 app.delete("/v1/channels/:channelID/members", RequestWrapper(deleteMembersHandler, { Channel }))
 app.patch("/v1/messages/:messageID", RequestWrapper(patchMessageHandler, { Message }))
 app.delete("/v1/messages/:messageID", RequestWrapper(deleteMessageHandler, { Message }))
-
-
-async function main() {
-    app.listen(port, "", () => {
-        console.log(`server is listening ${port}`);
-    })
-}
