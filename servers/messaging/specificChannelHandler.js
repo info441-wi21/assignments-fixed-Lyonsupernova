@@ -1,29 +1,15 @@
 // MySQL connection
-const mysql = require('mysql')
 const mongoose = require('mongoose')
 mongoose.set('useFindAndModify', false);
-const mysqlHost = process.env.MYSQL_HOST;
-const mysqlPassword = process.env.MYSQL_ROOT_PASSWORD;
-const mysqlUser = process.env.MySQL_USER;
-const mysqlDatabase = process.env.MYSQL_DATABASE;
-const mysqlPort = process.env.MYSQL_PORT
-var sqlConnection = mysql.createConnection ({
-  host: mysqlHost,
-  user: mysqlUser,
-  password: mysqlPassword,
-  port: mysqlPort,
-  database: mysqlDatabase,
-  insecureAuth: true
-});
 
 specificChannelGetHandler = async function(req, res, {Channel, Message}) {
     if (!req.get('x-user')) {
         res.status(401).send("unauthorized user");
         return;
     }
-    const userID = JSON.parse(req.headers['x-user']);
-    if (!userID) {
-        res.status(401).send("no id found");
+    const user = JSON.parse(req.headers['x-user']);
+    if (!user || !user['username'] || !user['id']) {
+        res.status(401).send("no user found");
         return;
     }
     const channelID = req.params.channelID;
@@ -34,7 +20,7 @@ specificChannelGetHandler = async function(req, res, {Channel, Message}) {
     }
     // If this is a private channel and the current user is not a member, respond with a
     // 403 (Forbidden) status code.
-    if (!channel['members'].some(el => el["id"] == userID) && channel.private) {
+    if (!channel['members'].some(el => el["id"] == user['id']) && channel.private) {
        res.status(403).send("member not private");
        return;
     }
@@ -42,7 +28,6 @@ specificChannelGetHandler = async function(req, res, {Channel, Message}) {
    
     // Otherwise, respond with the most recent 100 messages posted to the specified channel,
     try {
-        //TODO: messaged most recent 100
         if (!beforeMessageId) {
             const messages = await Message.find({"channelID":channelID}).sort({"editedAt":-1}).limit(100);
             // encoded as a JSON array of message model objects.
@@ -72,9 +57,9 @@ specificChannelPostHandler = async function(req, res, {Channel, Message}) {
         res.status(401).send("unauthorized user");
         return;
     }
-    const userID = JSON.parse(req.headers['x-user']);
-    if (!userID) {
-        res.status(401).send("no id found");
+    const user = JSON.parse(req.headers['x-user']);
+    if (!user || !user['username'] || !user['id']) {
+        res.status(401).send("no user found");
         return;
     }
     const channelID = req.params.channelID;
@@ -85,7 +70,7 @@ specificChannelPostHandler = async function(req, res, {Channel, Message}) {
     }
     // If this is a private channel and the current user is not a member, respond with a
     // 403 (Forbidden) status code.
-    if (!channel['members'].some(el => el["id"] == userID) && channel.private) {
+    if (!channel['members'].some(el => el["id"] == user['id']) && channel.private) {
        res.status(403).send("member not private");
        return;
     }
@@ -96,28 +81,12 @@ specificChannelPostHandler = async function(req, res, {Channel, Message}) {
         res.status(400).send("no body found");
         return;
     }
-    // get user profile from MySQL db
-    try {
-        userName = "";
-        var qry = "SELECT username FROM user WHERE id = " + mysql.escape(userID);
-        sqlConnection.query(qry, function (err, result) {
-            if (err) {
-              console.log('error retrieving new user info:', err.message);
-              return;
-            }
-            userName = result[0]
-        });
-    } catch (e) {
-        res.status.send(500).send("There was an issue getting the user")
-        return;
-    }
-    users = {"id":userID, "username": userName};
     createdAt = new Date();
     const message = {
         "channelID": channelID,
         "body": body,
         "createdAt": createdAt,
-        "creator": users,
+        "creator": user,
         "editedAt": createdAt,
     };
     const query = new Message(message);

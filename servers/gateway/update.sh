@@ -17,7 +17,7 @@ docker pull lyons124/gateway:latest
 
 export TLSCERT=/etc/letsencrypt/live/api.lyonsupernova.me/fullchain.pem
 export TLSKEY=/etc/letsencrypt/live/api.lyonsupernova.me/privkey.pem
-export SESSIONKEY="info441TEST"
+export SESSIONKEY=$(openssl rand -base64 18)
 export MYSQL_ROOT_PASSWORD=$(openssl rand -base64 18)
 export DB_NAME=441sqlserver
 
