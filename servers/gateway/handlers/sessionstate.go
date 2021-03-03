@@ -11,6 +11,6 @@ import (
 
 // SessionState stores the begin time and users information
 type SessionState struct {
-	BeginDate time.Time
-	User      *users.User
+	BeginDate time.Time   `json:"startTime"`
+	User      *users.User `json:"user"`
 }

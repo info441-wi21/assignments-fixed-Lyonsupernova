@@ -4,32 +4,41 @@ docker network create info441
 docker rm -f redis
 docker run -d --name redis --network info441 redis
 
+
+docker rm -f summary
+docker run -d --name summary --network info441 summary
+
+docker rm -f messaging
+docker run -d --name messaging --network info441 messaging
+
+
 docker rm -f gateway
 docker pull lyons124/gateway:latest
 
 export TLSCERT=/etc/letsencrypt/live/api.lyonsupernova.me/fullchain.pem
 export TLSKEY=/etc/letsencrypt/live/api.lyonsupernova.me/privkey.pem
-export SESSIONKEY=$(openssl rand -base64 18)
-export MYSQL_ROOT_PASSWORD="password"
-export MYSQL_DATABASE="mysqldatabase"
+export SESSIONKEY="info441TEST"
+export MYSQL_ROOT_PASSWORD=$(openssl rand -base64 18)
+export DB_NAME=441sqlserver
 
 
-docker rm -f sqldatabase
+docker rm -f 441mysql
 
-docker pull lyons124/sqldatabase
+docker pull lyons124/441mysql
 
 # running db instance
-docker run \
-    -d \
+docker run -d \
     -p 3306:3306 \
     -e MYSQL_ROOT_PASSWORD=$MYSQL_ROOT_PASSWORD \
-    -e MYSQL_DATABASE=$MYSQL_DATABASE \
-    --name sqldatabase \
+    -e MYSQL_DATABASE=$DB_NAME \
+    --name 441mysql \
 	--network info441 \
-    lyons124/sqldatabase
+    lyons124/441mysql
 
-export DSN=root:$MYSQL_DATABASE_PASSWORD@tcp\(sqldatabase:3306\)/$MYSQL_DATABASE
+export DSN=root:$MYSQL_ROOT_PASSWORD@tcp\(441mysql:3306\)/$DB_NAME
 export REDISADDR=redis:6379
+export MESSAGESADDR=message:80
+export SUMMARYADDR=summary:80
 
 docker run -d \
 --name gateway \
@@ -41,6 +50,8 @@ docker run -d \
 -e SESSIONKEY=$SESSIONKEY \
 -e DSN=$DSN \
 -e REDISADDR=$REDISADDR \
+-e MESSAGESADDR=$MESSAGESADDR \
+-e SUMMARYADDR=$SUMMARYADDR \
 --network info441 \
 lyons124/gateway:latest
 

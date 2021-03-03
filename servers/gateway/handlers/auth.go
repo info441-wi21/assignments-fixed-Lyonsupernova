@@ -28,8 +28,7 @@ func (ch *ContextHandler) UsersHandler(w http.ResponseWriter, r *http.Request) {
 	// usr type users.NewUser
 	newUsr := &users.NewUser{}
 	// err := json.NewDecoder(r.Body).Decode(newUsr)
-	jsonResponseBody, _ := ioutil.ReadAll(r.Body)
-	err := json.Unmarshal([]byte(jsonResponseBody), newUsr)
+	err := json.NewDecoder(r.Body).Decode(newUsr)
 	if err != nil {
 		log.Printf("error decoding JSON: %v\n", err)
 		http.Error(w, "Bad request", http.StatusBadRequest)
@@ -41,8 +40,9 @@ func (ch *ContextHandler) UsersHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
+	usr := &users.User{}
 	// set usr as user from new user
-	usr, err := newUsr.ToUser()
+	usr, err = newUsr.ToUser()
 	if err != nil {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
@@ -50,15 +50,19 @@ func (ch *ContextHandler) UsersHandler(w http.ResponseWriter, r *http.Request) {
 
 	insertUsr, err := ch.UserStore.Insert(usr)
 	if err != nil {
-		log.Printf("User database insert error")
+		log.Printf("User database insert error %s", err)
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
 
 	// begin a session
-	_, err = sessions.BeginSession(ch.SessionID, ch.SessionStore, &SessionState{time.Now(), insertUsr}, w)
+	sessionState := &SessionState{
+		BeginDate: time.Now(),
+		User:      insertUsr,
+	}
+	_, err = sessions.BeginSession(ch.SessionID, ch.SessionStore, sessionState, w)
 	if err != nil {
-		log.Printf("Begin session error")
+		log.Printf("Begin session error %s", err)
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
@@ -72,8 +76,6 @@ func (ch *ContextHandler) UsersHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Bad request", http.StatusBadRequest)
 		return
 	}
-	json, _ := json.Marshal(insertUsr)
-	w.Write([]byte(json))
 }
 
 // SpecificUserHandler authenticate the user and get the seesion state
@@ -93,7 +95,6 @@ func (ch *ContextHandler) SpecificUserHandler(w http.ResponseWriter, r *http.Req
 	/*
 		sessionState := &SessionState{}
 		_, err = sessions.GetState(r, ch.SessionID, ch.SessionStore, sessionState)
-
 		if err != nil {
 			http.Error(w, "current session state is not valid", http.StatusUnauthorized)
 			return
@@ -129,8 +130,6 @@ func (ch *ContextHandler) SpecificUserHandler(w http.ResponseWriter, r *http.Req
 			http.Error(w, "Bad request", http.StatusBadRequest)
 			return
 		}
-		json, _ := json.Marshal(usr)
-		w.Write([]byte(json))
 	} else if r.Method == http.MethodPatch {
 		if base != "me" {
 			userID, err := strconv.ParseInt(base, 10, 64)
@@ -174,8 +173,6 @@ func (ch *ContextHandler) SpecificUserHandler(w http.ResponseWriter, r *http.Req
 			http.Error(w, "Bad request", http.StatusBadRequest)
 			return
 		}
-		json, _ := json.Marshal(updateUsr)
-		w.Write([]byte(json))
 	} else {
 		http.Error(w, "Error request method", http.StatusMethodNotAllowed)
 	}
@@ -202,7 +199,7 @@ func (ch *ContextHandler) SessionsHandler(w http.ResponseWriter, r *http.Request
 		user, err := ch.UserStore.GetByEmail(userCredential.Email)
 		if err != nil {
 			log.Printf("The user's profile cannot be found")
-			http.Error(w, "Profiel not found", http.StatusUnauthorized)
+			http.Error(w, "Profile not found", http.StatusUnauthorized)
 			return
 		}
 
@@ -237,8 +234,6 @@ func (ch *ContextHandler) SessionsHandler(w http.ResponseWriter, r *http.Request
 			http.Error(w, "Bad request", http.StatusBadRequest)
 			return
 		}
-		json, _ := json.Marshal(user)
-		w.Write([]byte(json))
 	} else {
 		http.Error(w, "Error status method: only accept Post", http.StatusMethodNotAllowed)
 	}
@@ -255,8 +250,12 @@ func (ch *ContextHandler) SpecificSessionHandler(w http.ResponseWriter, r *http.
 		}
 
 		// end session
-		sessions.EndSession(r, ch.SessionID, ch.SessionStore)
-
+		sessionID, err := sessions.EndSession(r, ch.SessionID, ch.SessionStore)
+		if err != nil {
+			log.Printf("session has already been ended %s", sessionID)
+			http.Error(w, "Session error", http.StatusForbidden)
+			return
+		}
 		// print out sign out information
 		w.Write([]byte("signed out"))
 	} else {
