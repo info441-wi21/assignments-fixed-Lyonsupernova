@@ -2,7 +2,7 @@ docker pull lyons124/messaging
 
 docker rm -f messaging
 
-export MONGOADDR="mongodb://mongodb:27017/message"
+export MONGOADDR="mongodb://info441MongoDB:27017/message"
 export PORT=80
 
 # docker rm -f mongodb
