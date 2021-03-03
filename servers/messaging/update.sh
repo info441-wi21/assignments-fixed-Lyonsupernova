@@ -5,15 +5,7 @@ docker rm -f messaging
 export MONGOADDR="mongodb://info441MongoDB:27017/message"
 export PORT=80
 
-# docker rm -f mongodb
-
-# docker run -d \
-# -p 27017:27017 \
-# --name mongodb \
-# --network info441 \
-# mongo
-
-# running db instance
+# running messaging instance
 docker run -d \
     -e PORT=80 \
     -e MONGOADDR=$MONGOADDR \

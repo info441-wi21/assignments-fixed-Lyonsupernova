@@ -1,0 +1,1 @@
+ssh ec2-user@api.lyonsupernova.me < runmongo.sh
