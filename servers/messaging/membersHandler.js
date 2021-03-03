@@ -23,14 +23,14 @@ postMembersHandler = async(req, res, {Channel}) => {
   }
 
   const channelID = req.url.split('/')[3];
-  const userID = JSON.parse(req.headers['x-user']);
-  if (!userID) {
-  res.status(401).send("no id found");
-    return;
+  const user = JSON.parse(req.headers['x-user']);
+  if (!user || !user['username'] || !user['id']) {
+      res.status(401).send("no user found");
+      return;
   }
   //check creator
   const currDocument = await Channel.findOne({"id": channelID}, {"creator": 1, "members": 1});
-  if (currDocument['creator']['id'] != userID) {
+  if (currDocument['creator']['id'] != user['id']) {
     res.status(403).send("Incorrect creator")
   }
 
@@ -56,9 +56,13 @@ deleteMembersHandler = async (req, res, {Channel}) => {
 
   //check creator
   const channelID = req.url.split('/')[3];
-  const userID = JSON.parse(req.headers['x-user']);
+  const user = JSON.parse(req.headers['x-user']);
+  if (!user || !user['username'] || !user['id']) {
+      res.status(401).send("no user found");
+      return;
+  }
   const currDocument = await Channel.findOne({"id": channelID}, {"creator": 1, "members": 1});
-  if (currDocument['creator']['id'] != userID) {
+  if (currDocument['creator']['id'] != user['id']) {
     res.status(403).send("Incorrect creator");
   }
 
