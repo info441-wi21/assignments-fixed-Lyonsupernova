@@ -113,8 +113,8 @@ specificChannelPatchHandler = async function(req, res, {Channel}) {
         return;
     }
     const user = JSON.parse(req.get('X-User'));
-    if (!user) {
-        res.status(401).send("no id found");
+    if (!user || !user['username'] || !user['id']) {
+        res.status(401).send("no user found");
         return;
     }
     const channelID = req.params.channelID;
@@ -154,8 +154,8 @@ specificChannelDeleteHandler = async function(req, res, {Channel, Message}) {
         return;
     }
     const user = JSON.parse(req.get('X-User'));
-    if (!user) {
-        res.status(401).send("no id found");
+    if (!user || !user['username'] || !user['id']) {
+        res.status(401).send("no user found");
         return;
     }
     const channelID = req.params.channelID;
