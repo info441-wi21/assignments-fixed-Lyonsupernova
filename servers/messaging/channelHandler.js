@@ -5,7 +5,7 @@ channelGetHandler = async(req, res, {Channel}) => {
         return;
     }
     // parse x-user to get user id
-    const user = JSON.parse(req.headers['X-User']);
+    const user = JSON.parse(req.get('X-User'));
     if (!user || !user['username'] || !user['id']) {
         res.status(401).send("no user found");
         return;
@@ -26,7 +26,7 @@ channelPostHandler = async(req, res, {Channel}) => {
         return;
     }
     // parse x-user to get user id
-    const user = JSON.parse(req.headers['X-User']);
+    const user = JSON.parse(req.get('X-User'));
     if (!user || !user['username'] || !user['id']) {
         res.status(401).send("no user found");
         return;

@@ -23,7 +23,7 @@ postMembersHandler = async(req, res, {Channel}) => {
   }
 
   const channelID = req.url.split('/')[3];
-  const user = JSON.parse(req.headers['X-User']);
+  const user = JSON.parse(req.get('X-User'));
   if (!user || !user['username'] || !user['id']) {
       res.status(401).send("no user found");
       return;
@@ -56,7 +56,7 @@ deleteMembersHandler = async (req, res, {Channel}) => {
 
   //check creator
   const channelID = req.url.split('/')[3];
-  const user = JSON.parse(req.headers['X-User']);
+  const user = JSON.parse(req.get('X-User'));
   if (!user || !user['username'] || !user['id']) {
       res.status(401).send("no user found");
       return;

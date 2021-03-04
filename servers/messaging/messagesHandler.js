@@ -12,7 +12,7 @@ patchMessageHandler = async (req, res, {Message}) => {
   // update the message
   const messageID = req.url.split('/')[3];
   const message = req.body['body'];
-  const targetMessage = await Message.findOne({"id": messageID});
+  const targetMessage = await Message.findOne({"id": messageID}).exec();
   if (targetMessage == null) {
     res.status(404).send("No message found");
     return;
@@ -25,6 +25,7 @@ patchMessageHandler = async (req, res, {Message}) => {
     }
     res.setHeader("Content-Type", "application/json");
     res.status(200);
+    res.json(data);
   });
     //res.json(newMessage);
 }
@@ -38,7 +39,7 @@ deleteMessageHandler = async (req, res, {Message}) => {
 
   // Delete the message body
   const messageID = req.url.split('/')[3];
-  const targetMessage = await Message.findOne({"id": messageID});
+  const targetMessage = await Message.findOne({"id": messageID}).exec();
   if (targetMessage == null) {
     res.status(404).send("No message found");
     return;

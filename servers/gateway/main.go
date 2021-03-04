@@ -53,8 +53,8 @@ func main() {
 	}
 
 	type messageUser struct {
-		id       int64
-		username string
+		ID       int64  `json:"id"`
+		UserName string `json:"username"`
 	}
 
 	messageDirector := func(r *http.Request) {
@@ -81,6 +81,7 @@ func main() {
 			log.Println(string(result))
 			if err != nil {
 				log.Printf("Unable to encode X-User for messaging: %v", err)
+				return
 			}
 			r.Header.Set("X-User", fmt.Sprint(string(result)))
 		} else {

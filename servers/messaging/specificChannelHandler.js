@@ -7,7 +7,7 @@ specificChannelGetHandler = async function(req, res, {Channel, Message}) {
         res.status(401).send("unauthorized user");
         return;
     }
-    const user = JSON.parse(req.headers['X-User']);
+    const user = JSON.parse(req.get('X-User'));
     if (!user || !user['username'] || !user['id']) {
         res.status(401).send("no user found");
         return;
@@ -24,7 +24,8 @@ specificChannelGetHandler = async function(req, res, {Channel, Message}) {
        res.status(403).send("member not private");
        return;
     }
-    const beforeMessageId = req.body["before"];
+    //const beforeMessageId = req.body["before"];
+    const beforeMessageId = req.query.before;
 
     // Otherwise, respond with the most recent 100 messages posted to the specified channel,
     try {
@@ -57,7 +58,7 @@ specificChannelPostHandler = async function(req, res, {Channel, Message}) {
         res.status(401).send("unauthorized user");
         return;
     }
-    const user = JSON.parse(req.headers['X-User']);
+    const user = JSON.parse(req.get('X-User'));
     if (!user || !user['username'] || !user['id']) {
         res.status(401).send("no user found");
         return;
@@ -111,8 +112,8 @@ specificChannelPatchHandler = async function(req, res, {Channel}) {
         res.status(401).send("unauthorized user");
         return;
     }
-    const userID = JSON.parse(req.headers['X-User']);
-    if (!userID) {
+    const user = JSON.parse(req.get('X-User'));
+    if (!user) {
         res.status(401).send("no id found");
         return;
     }
@@ -124,7 +125,7 @@ specificChannelPatchHandler = async function(req, res, {Channel}) {
     }
     // If the current user isn't the creator of this channel,
     // respond with the status code 403 (Forbidden).
-    if (channel['creator'].id != userID) {
+    if (channel['creator'].id != user['id']) {
        res.status(403).send("creator not found");
        return;
     }
@@ -152,8 +153,8 @@ specificChannelDeleteHandler = async function(req, res, {Channel, Message}) {
         res.status(401).send("unauthorized user");
         return;
     }
-    const userID = JSON.parse(req.headers['X-User']);
-    if (!userID) {
+    const user = JSON.parse(req.get('X-User'));
+    if (!user) {
         res.status(401).send("no id found");
         return;
     }
@@ -165,7 +166,7 @@ specificChannelDeleteHandler = async function(req, res, {Channel, Message}) {
     }
     // If the current user isn't the creator of this channel,
     // respond with the status code 403 (Forbidden).
-    if (channel['creator'].id != userID) {
+    if (channel['creator'].id != user['id']) {
        res.status(403).send("the user is not the creator of the channel");
        return;
     }
