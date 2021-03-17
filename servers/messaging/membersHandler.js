@@ -29,22 +29,24 @@ postMembersHandler = async(req, res, {Channel}) => {
       return;
   }
   //check creator
-  const currDocument = await Channel.findOne({"id": channelID}, {"creator": 1, "members": 1});
+  const currDocument = await Channel.findOne({"id": channelID}, {"creator": 1, "members": 1}).exec();
   if (currDocument['creator']['id'] != user['id']) {
     res.status(403).send("Incorrect creator")
+    return;
   }
 
   // TODO: add another for loop to check if the user is already in the channel
   const member = req.body;
   currDocument['members'] = currDocument['members'].push(member);
-  Channel.findOneAndUpdate({"id": channelID},{$set:{"members": currDocument['members']}}, { new: true }, function(err, data) {
+  await Channel.findOneAndUpdate({"id": channelID},{$set:{"members": currDocument['members']}}, { new: true }, function(err, data) {
     if (err) {
         res.status(400).send("message: " + data + " delete error: " + err);
         return;
     }
     //res.status(201).send('Member has been added');
     res.json(data);
-  });
+  }).exec();
+  res.status(201).send("Added memeber successfully");
 }
 
 // delete handler for /v1/channels/{channelID}/members
@@ -61,16 +63,17 @@ deleteMembersHandler = async (req, res, {Channel}) => {
       res.status(401).send("no user found");
       return;
   }
-  const currDocument = await Channel.findOne({"id": channelID}, {"creator": 1, "members": 1});
+  const currDocument = await Channel.findOne({"id": channelID}, {"creator": 1, "members": 1}).exec();
   if (currDocument['creator']['id'] != user['id']) {
-    res.status(403).send("Incorrect creator");
+    res.status(403).send("Cannot delete members: not creator");
+    return;
   }
 
   // update new members lists
   const memberID = JSON.parse(req.body['id']);
   //res.json(req.body['id']);
   currDocument['members'] = currDocument['members'].filter(el => el['id'] != memberID);
-  Channel.findOneAndUpdate(
+  await Channel.findOneAndUpdate(
     {"id": channelID}, {$set:{"members": currDocument['members']}},
     { new: true },
     function(err, data) {
@@ -78,9 +81,8 @@ deleteMembersHandler = async (req, res, {Channel}) => {
         res.status(400).send("message: " + data + " delete error: " + err);
         return;
     }
-    //res.status(200).send('Member has been deleted');
-    res.json(data);
-  });
+  }).exec();
+  res.status(200).send('Member has been deleted');
 }
 
 module.exports = {postMembersHandler, deleteMembersHandler};

@@ -15,7 +15,7 @@ channelGetHandler = async(req, res, {Channel}) => {
         channels = await Channel.find({$or: [{"private": true, "members.id": user['id']}, {"private": false}]});
         res.json(channels);
     } catch (e) {
-        res.status(500).send("channels not found" + user['id'] + users[username]);
+        res.status(500).send("channels not found" + user['id'] + user["username"]);
     }
 };
 

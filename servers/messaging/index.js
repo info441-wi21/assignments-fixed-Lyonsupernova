@@ -3,11 +3,11 @@ const express = require('express')
 const {channelSchema, messageSchema} = require('./schemas')
 const Channel = mongoose.model("Channel", channelSchema)
 const Message = mongoose.model("Message", messageSchema)
-// const port = 4000
+const port = 4000
 // const mongoPort = process.env.MONGOPORT;
-// const mongoEndPoint = "mongodb://localhost:27017/test"
-const mongoEndPoint = process.env.MONGOADDR
-const port = process.env.PORT;
+const mongoEndPoint = "mongodb://localhost:27017/test"
+//const mongoEndPoint = process.env.MONGOADDR
+//const port = process.env.PORT;
 const app = express();
 app.use(express.json());
 
@@ -40,14 +40,31 @@ const RequestWrapper = (handler, SchemeAndDBForwarder) => {
     }
 };
 
-app.get("/v1/channels", RequestWrapper(channelGetHandler, { Channel }))
-app.post("/v1/channels", RequestWrapper(channelPostHandler, { Channel }))
-app.get("/v1/channels/:channelID", RequestWrapper(specificChannelGetHandler, { Channel, Message }))
-app.post("/v1/channels/:channelID", RequestWrapper(specificChannelPostHandler, { Channel, Message }))
-app.patch("/v1/channels/:channelID", RequestWrapper(specificChannelPatchHandler, { Channel }))
-app.delete("/v1/channels/:channelID", RequestWrapper(specificChannelDeleteHandler, { Channel, Message }))
+// Define the method not allow function
+const methodNotAllowed = (req, res, next) => res.status(405).send("Method not allowed");
 
-app.post("/v1/channels/:channelID/members", RequestWrapper(postMembersHandler, { Channel }))
-app.delete("/v1/channels/:channelID/members", RequestWrapper(deleteMembersHandler, { Channel }))
-app.patch("/v1/messages/:messageID", RequestWrapper(patchMessageHandler, { Message }))
-app.delete("/v1/messages/:messageID", RequestWrapper(deleteMessageHandler, { Message }))
+app
+.route('/v1/channels')
+.get(RequestWrapper(channelGetHandler, { Channel }))
+.post(RequestWrapper(channelPostHandler, { Channel }))
+.all(methodNotAllowed);
+
+app
+.route("/v1/channels/:channelID")
+.get(RequestWrapper(specificChannelGetHandler, { Channel, Message }))
+.post(RequestWrapper(specificChannelPostHandler, { Channel, Message }))
+.patch(RequestWrapper(specificChannelPatchHandler, { Channel }))
+.delete(RequestWrapper(specificChannelDeleteHandler, { Channel, Message }))
+.all(methodNotAllowed);
+
+app
+.route("/v1/channels/:channelID/members")
+.post(RequestWrapper(postMembersHandler, { Channel }))
+.delete(RequestWrapper(deleteMembersHandler, { Channel }))
+.all(methodNotAllowed);
+
+app
+.route("/v1/messages/:messageID")
+.patch(RequestWrapper(patchMessageHandler, { Message }))
+.delete(RequestWrapper(deleteMessageHandler, { Message }))
+.all(methodNotAllowed);

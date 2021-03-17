@@ -4,7 +4,8 @@ mongoose.set('useFindAndModify', false);
 
 // Patch Handler for /v1/messages/{messageID}
 patchMessageHandler = async (req, res, {Message}) => {
-  if (!req.get('X-User')) {
+  const user = JSON.parse(req.get('X-User'));
+  if (!user) {
     res.status(401).send("unauthorized user");
     return;
   }
@@ -18,21 +19,31 @@ patchMessageHandler = async (req, res, {Message}) => {
     return;
   }
 
-  Message.findOneAndUpdate({"id": messageID}, {$set:{"body": message, "editedAt": new Date()}}, function(err, data) {
+  // check if the current user is the creator of the message
+  // if not, return 403
+  if (targetMessage.creator.id != user['id']) {
+    res.status(403).send("Cannot patch message: invalid creator");
+    return;
+  }
+
+  // update the message to mongodb
+  await Message.findOneAndUpdate({"id": messageID}, {$set:{"body": message, "editedAt": new Date()}}, function(err, data) {
     if (err) {
         res.status(400).send("message: " + data + " delete error: " + err);
         return;
     }
-    res.setHeader("Content-Type", "application/json");
-    res.status(200);
-    res.json(data);
-  });
-    //res.json(newMessage);
+  }).exec();
+
+  // retreive updated message and send back to the client side
+  const updatedMessage = await Message.findOne({"id": messageID}).exec();
+  res.setHeader("Content-Type", "application/json");
+  res.status(200).json(updatedMessage);
 }
 
 // Delete Handler for /v1/messages/{messageID}
 deleteMessageHandler = async (req, res, {Message}) => {
-  if (!req.get('X-User')) {
+  const user = JSON.parse(req.get('X-User'));
+  if (!user) {
     res.status(401).send("unauthorized user");
     return;
   }
@@ -45,12 +56,20 @@ deleteMessageHandler = async (req, res, {Message}) => {
     return;
   }
 
+  // check if the current user is the creator of the message
+  // if not, return 403
+  if (targetMessage.creator.id != user['id']) {
+    res.status(403).send("Cannot patch message: invalid creator");
+    return;
+  }
+
+  // remove
   await Message.findOneAndRemove({"id": messageID}, function(err, data) {
     if (err) {
         res.status(400).send("message: " + data + " delete error: " + err);
         return;
     }
-  });
+  }).exec();
   res.status(200).send("Deleted message sucessfully");
 }
 

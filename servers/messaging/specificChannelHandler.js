@@ -65,6 +65,7 @@ specificChannelPostHandler = async function(req, res, {Channel, Message}) {
     }
     const channelID = req.params.channelID;
     const channel = await Channel.findOne({"id" : channelID});
+    //console.log(channel);
     if (!channel) {
         res.status(400).send("Channel not exist channelID");
         return;
