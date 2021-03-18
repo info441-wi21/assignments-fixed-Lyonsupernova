@@ -1,0 +1,14 @@
+# Template
+#Users (
+#    ID int not null auto_increment primary key,
+#    Email varchar(255) not null unique, /* https://stackoverflow.com/questions/7717573/what-is-the-longest-possible-email-address  */
+#    PassHash binary(60) not null, /* https://stackoverflow.com/questions/5881169/what-column-type-length-should-i-use-for-storing-a-bcrypt-hashed-password-in-a-d */
+#    UserName varchar(255) not null unique,
+#    FirstName varchar(128) not null,
+#    LastName varchar(128) not null,
+#    PhotoURL varchar(2083) not null
+#);
+
+docker exec -it sqldatabase mysql -p -e 'INSERT INTO Users VALUES (16234, "member1@gmail.com", \x01, "member1", "lance", "zhong", "abcdefg");' "mysqldatabase"
+docker exec -it sqldatabase mysql -p -e 'INSERT INTO Users VALUES (2, "member2@gmail.com", \x02, "member2", "yes", "man", "efggv");' "mysqldatabase"
+docker exec -it sqldatabase mysql -p -e 'INSERT INTO Users VALUES (3, "member3@gmail.com", \x03, "member3", "yo", "4.0", "qwetg");' "mysqldatabase"
